@@ -2,9 +2,16 @@
   "name": "use-media-stream",
   "version": "1.0.0",
   "description": "A React hook for handling media streams with internal configuration and graceful error handling.",
+  "type": "module",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
+  "files": [
+    "lib",
+    "LICENSE",
+    "README.md"
+  ],
   "scripts": {
+    "build": "tsc --project tsconfig.build.json",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
@@ -18,8 +25,18 @@
     "error handling"
   ],
   "author": "Dhruv Kothari",
-  "license": "ISC",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kothariji/use-media-stream.git"
+  },
+  "peerDependencies": {
+    "react": ">=16"
+  },
   "devDependencies": {
+    "@types/react": "^18.2.48",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "typescript": "^5.3.3"
   }
 }

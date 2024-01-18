@@ -17,7 +17,7 @@ const GET_USER_MEDIA_ERROR_MESSAGES = {
 };
 
 interface useMediaStreamInterface {
-  mediaDeviceConstraints: MediaStreamConstraints;
+  mediaDeviceConstraints: MediaStreamConstraints | null;
 }
 
 const defaultMediaDeviceConstraints: MediaStreamConstraints = {

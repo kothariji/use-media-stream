@@ -7,7 +7,6 @@ use-media-stream is a powerful React hook designed to streamline the integration
 Install the hook using your preferred package manager:
 
 ```bash
-
 npm install use-media-stream
 or
 yarn add use-media-stream
@@ -38,53 +37,53 @@ function MyComponent() {
 
 ### Stream Control
 
-stream: The current media stream.
-isSupported: Indicates if media stream functionality is supported in the browser.
-isStreaming: Indicates whether the media stream is currently active.
-isAudioMuted: Indicates whether the audio is muted.
-isVideoMuted: Indicates whether the video is muted.
+- `stream`: The current media stream.
+- `isSupported`: Indicates if media stream functionality is supported in the browser.
+- `isStreaming`: Indicates whether the media stream is currently active.
+- `isAudioMuted`: Indicates whether the audio is muted.
+- `isVideoMuted`: Indicates whether the video is muted.
 
 ### Device Information
 
-devices: Array of available media devices.
-audioInputDevices: Array of available audio input devices.
-audioOutputDevices: Array of available audio output devices.
-videoInputDevices: Array of available video input devices.
-selectedAudioTrackDeviceId: ID of the selected audio track device.
-selectedVideoTrackDeviceId: ID of the selected video track device.
-selectedVideoTrackDeviceWidth: Width of the selected video track device.
-selectedVideoTrackDeviceHeight: Height of the selected video track device.
-selectedVideoTrackDeviceAspectRatio: Aspect ratio of the selected video track device.
+- `devices`: Array of available media devices.
+- `audioInputDevices`: Array of available audio input devices.
+- `audioOutputDevices`: Array of available audio output devices.
+- `videoInputDevices`: Array of available video input devices.
+- `selectedAudioTrackDeviceId`: ID of the selected audio track device.
+- `selectedVideoTrackDeviceId`: ID of the selected video track device.
+- `selectedVideoTrackDeviceWidth`: Width of the selected video track device.
+- `selectedVideoTrackDeviceHeight`: Height of the selected video track device.
+- `selectedVideoTrackDeviceAspectRatio`: Aspect ratio of the selected video track device.
 
 ### Methods
 
-getStreamRequest: Request a new media stream.
-getMediaDevicesRequest: Request information about available media devices.
+- `getStreamRequest`: Request a new media stream.
+- `getMediaDevicesRequest`: Request information about available media devices.
 
 ### Handlers
 
-start: Start the media stream.
-stop: Stop the media stream.
-getMediaDevices: Get a list of available media devices.
-updateMediaDeviceConstraints: Update media device constraints.
+- `start`: Start the media stream.
+- `stop`: Stop the media stream.
+- `getMediaDevices`: Get a list of available media devices.
+- `updateMediaDeviceConstraints`: Update media device constraints.
 
 ### Audio and Video Control
 
-muteAudio: Mute the audio.
-unmuteAudio: Unmute the audio.
-muteVideo: Mute the video.
-unmuteVideo: Unmute the video.
+- `muteAudio`: Mute the audio.
+- `unmuteAudio`: Unmute the audio.
+- `muteVideo`: Mute the video.
+- `unmuteVideo`: Unmute the video.
 
 ### Event Listeners
 
-addVideoEndedEventListener: Add an event listener for video end.
-addAudioEndedEventListener: Add an event listener for audio end.
-addVideoMuteEventListener: Add an event listener for video mute.
-addAudioMuteEventListener: Add an event listener for audio mute.
-removeVideoEndedEventListener: Remove the video end event listener.
-removeAudioEndedEventListener: Remove the audio end event listener.
-removeVideoMuteEventListener: Remove the video mute event listener.
-removeAudioMuteEventListener: Remove the audio mute event listener.
+- ` addVideoEndedEventListener`: a function that adds an event listener for when the video track ends
+- `addAudioEndedEventListener` : a function that adds an event listener for when the audio track ends
+- `addVideoMuteEventListener `: a function that adds an event listener for when the video track is muted
+- ` addAudioMuteEventListener`: a function that adds an event listener for when the audio track is muted
+- `removeVideoEndedEventListener` : a function that removes the event listener for when the video track ends
+- `removeAudioEndedEventListener `: a function that removes the event listener for when the audio track ends
+- ` removeVideoMuteEventListener`: a function that removes the event listener for when the video track is muted
+- `removeAudioMuteEventListener`: a function that removes the event listener for when the audio track is muted
 
 ## License
 

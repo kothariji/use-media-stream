@@ -1,0 +1,25 @@
+{
+  "name": "use-media-stream",
+  "version": "1.0.0",
+  "description": "A React hook for handling media streams with internal configuration and graceful error handling.",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "react",
+    "hook",
+    "media",
+    "stream",
+    "video",
+    "audio",
+    "configuration",
+    "error handling"
+  ],
+  "author": "Dhruv Kothari",
+  "license": "ISC",
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}

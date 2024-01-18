@@ -1,7 +1,7 @@
 {
   "name": "use-media-stream",
   "version": "1.0.0",
-  "description": "A React hook for handling media streams with internal configuration and graceful error handling.",
+  "description": "React hook that simplifies the integration and management of media streams with extensive control over devices, streaming status, and event handling.",
   "type": "module",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -19,16 +19,23 @@
   },
   "keywords": [
     "react",
-    "hook",
-    "media",
-    "stream",
-    "video",
+    "react-hook",
+    "media-stream",
+    "webRTC",
     "audio",
-    "configuration",
-    "error handling"
+    "video",
+    "streaming",
+    "media",
+    "device-control",
+    "event-handling",
+    "Web development"
   ],
-  "author": "Dhruv Kothari",
+  "author": "Dhruv Kothari <kotharidhruv25@gmail.com>",
   "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/kothariji/use-media-stream/issues"
+  },
+  "homepage": "https://github.com/kothariji/use-media-stream#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kothariji/use-media-stream.git"

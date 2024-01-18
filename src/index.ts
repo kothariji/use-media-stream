@@ -1,20 +1,6 @@
 import { useRef, useState } from 'react';
 import { REQUEST_STATES } from './constants';
-const merge = require('deepmerge');
-
-const GET_USER_MEDIA_ERRORS = {
-  NotAllowedError: 'NotAllowedError',
-  NotFoundError: 'NotFoundError',
-  NotReadableError: 'NotReadableError',
-  OverconstrainedError: 'OverconstrainedError',
-};
-
-const GET_USER_MEDIA_ERROR_MESSAGES = {
-  [GET_USER_MEDIA_ERRORS.NotAllowedError]: `Click on the lock icon in your browser's address bar and allow permissions for camera and microphone`,
-  [GET_USER_MEDIA_ERRORS.NotFoundError]: 'The requested media track or device was not found',
-  [GET_USER_MEDIA_ERRORS.NotReadableError]: 'The media track or device is not readable',
-  [GET_USER_MEDIA_ERRORS.OverconstrainedError]: 'The media tracks requested are conflicting and cannot be satisfied',
-};
+import merge from 'deepmerge';
 
 interface useMediaStreamInterface {
   mediaDeviceConstraints: MediaStreamConstraints | null;
@@ -38,10 +24,10 @@ const defaultMediaDeviceConstraints: MediaStreamConstraints = {
 
 // TODO: add removeEventListeners on unmount
 // TODO: add global error
-const useMediaStream = ({ mediaDeviceConstraints: _mediaDeviceConstraints }: useMediaStreamInterface) => {
+const useMediaStream = (props?: useMediaStreamInterface) => {
   const isSupported = !!navigator?.mediaDevices?.getUserMedia;
   const [mediaDeviceConstraints, setMediaDeviceConstraints] = useState(() =>
-    merge(defaultMediaDeviceConstraints, _mediaDeviceConstraints),
+    merge(defaultMediaDeviceConstraints, props?.mediaDeviceConstraints ?? {}),
   );
   const [getStreamRequest, setGetStreamRequest] = useState(REQUEST_STATES.IDLE);
   const [getMediaDevicesRequest, setGetMediaDevicesRequest] = useState(REQUEST_STATES.IDLE);
@@ -106,9 +92,6 @@ const useMediaStream = ({ mediaDeviceConstraints: _mediaDeviceConstraints }: use
       setGetStreamRequest(REQUEST_STATES.FULFILLED);
       return userMediaStream;
     } catch (e: any) {
-      if (e.name in GET_USER_MEDIA_ERRORS) {
-        e.errorMessage = GET_USER_MEDIA_ERROR_MESSAGES[e.name];
-      }
       setGetStreamRequest(REQUEST_STATES.REJECTED);
       //TODO: capture error
       //   getStreamRequestHandlers.rejected(e);

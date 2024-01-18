@@ -78,10 +78,10 @@ function MyComponent() {
 
 - ` addVideoEndedEventListener`: a function that adds an event listener for when the video track ends
 - `addAudioEndedEventListener` : a function that adds an event listener for when the audio track ends
-- `addVideoMuteEventListener `: a function that adds an event listener for when the video track is muted
+- `addVideoMuteEventListener`: a function that adds an event listener for when the video track is muted
 - ` addAudioMuteEventListener`: a function that adds an event listener for when the audio track is muted
-- `removeVideoEndedEventListener` : a function that removes the event listener for when the video track ends
-- `removeAudioEndedEventListener `: a function that removes the event listener for when the audio track ends
+- `removeVideoEndedEventListener`: a function that removes the event listener for when the video track ends
+- `removeAudioEndedEventListener`: a function that removes the event listener for when the audio track ends
 - ` removeVideoMuteEventListener`: a function that removes the event listener for when the video track is muted
 - `removeAudioMuteEventListener`: a function that removes the event listener for when the audio track is muted
 

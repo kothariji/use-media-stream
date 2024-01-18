@@ -1,18 +1,16 @@
 {
   "compilerOptions": {
-    /* Visit https://aka.ms/tsconfig to read more about this file */
-
-    "strict": true /* Enable all strict type-checking options. */,
-    "declaration": true /* Generate .d.ts files from TypeScript and JavaScript files in your project. */,
-    "target": "es2016" /* Set the JavaScript language version for emitted JavaScript and include compatible library declarations. */,
-    "module": "ESNext" /* Specify what module code is generated. */,
+    "strict": true,
+    "declaration": true,
+    "target": "es2016",
+    "module": "ESNext",
     "moduleResolution": "Node",
     "rootDir": "./src",
     "outDir": "lib",
-    "esModuleInterop": true /* Emit additional JavaScript to ease support for importing CommonJS modules. This enables 'allowSyntheticDefaultImports' for type compatibility. */,
-    "forceConsistentCasingInFileNames": true /* Ensure that casing is correct in imports. */,
-    "skipLibCheck": true /* Skip type checking all .d.ts files. */
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true
   },
   "include": ["src/**/*.ts", "test"],
-  "exclude": ["node_modules", "**/__tests__/*"] // which files to skip
+  "exclude": ["node_modules"]
 }

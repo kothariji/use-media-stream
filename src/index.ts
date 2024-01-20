@@ -1,11 +1,22 @@
-import { useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { REQUEST_STATES } from './constants';
 import merge from 'deepmerge';
 
+/**
+ * Represents the configuration for using a media stream
+ */
 interface useMediaStreamInterface {
+  /**
+   * The constraints for the media device to be used in the media stream.
+   * @type {MediaStreamConstraints | null}
+   */
   mediaDeviceConstraints: MediaStreamConstraints | null;
 }
 
+/**
+ * Default media device constraints for initializing a media stream.
+ * @type {MediaStreamConstraints}
+ */
 const defaultMediaDeviceConstraints: MediaStreamConstraints = {
   audio: {
     deviceId: '',
@@ -22,9 +33,11 @@ const defaultMediaDeviceConstraints: MediaStreamConstraints = {
   },
 };
 
-// TODO: add removeEventListeners on unmount
-// TODO: add global error
+/**
+ * React hook for managing and integrating media streams within your application.
+ */
 const useMediaStream = (props?: useMediaStreamInterface) => {
+  // check if the browser supports `getUserMedia`
   const isSupported = !!navigator?.mediaDevices?.getUserMedia;
   const [mediaDeviceConstraints, setMediaDeviceConstraints] = useState(() =>
     merge(defaultMediaDeviceConstraints, props?.mediaDeviceConstraints ?? {}),
@@ -32,8 +45,12 @@ const useMediaStream = (props?: useMediaStreamInterface) => {
   const [getStreamRequest, setGetStreamRequest] = useState(REQUEST_STATES.IDLE);
   const [getMediaDevicesRequest, setGetMediaDevicesRequest] = useState(REQUEST_STATES.IDLE);
 
-  const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
+  // `isStreaming` is a flag that holds true when the start() function is called.
   const [isStreaming, setIsStreaming] = useState(false);
+
+  //global state for capturing any error in while fetching the stream or devices
+  const [error, setError] = useState<unknown>(null);
+  const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const [isAudioMuted, setIsAudioMuted] = useState(false);
   const [isVideoMuted, setIsVideoMuted] = useState(false);
 
@@ -63,85 +80,169 @@ const useMediaStream = (props?: useMediaStreamInterface) => {
   const selectedVideoTrackDeviceHeight = selectedVideoDeviceTrackSettings?.height;
   const selectedVideoTrackDeviceAspectRatio = selectedVideoDeviceTrackSettings?.aspectRatio;
 
-  const initiateStream = async (mediaDeviceConstraintsFromArgs = mediaDeviceConstraints) => {
+  const handleOnVideoMuteEvent = useCallback(() => {
+    setIsVideoMuted(true);
+  }, []);
+
+  const handleOnAudioMuteEvent = useCallback(() => {
+    setIsAudioMuted(true);
+  }, []);
+
+  const handleOnVideoOrAudioEndedEvent = useCallback(() => {
+    setIsStreaming(false);
+  }, []);
+
+  /**
+   * Initiates a media stream based on the provided constraints or default constraints.
+   *
+   * @async
+   * @function initiateStream
+   * @param {MediaStreamConstraints} [mediaDeviceConstraintsFromArgs=defaultMediaDeviceConstraints]
+   *        - Constraints for the media device, taken from arguments or defaults to the global defaults.
+   * @returns {Promise<MediaStream>} A promise resolving to the obtained media stream.
+   */
+  const initiateStream = async (
+    mediaDeviceConstraintsFromArgs = mediaDeviceConstraints,
+  ): Promise<MediaStream | null> => {
+    // resetting the error state
+    setError(null);
     setGetStreamRequest(REQUEST_STATES.PENDING);
 
     try {
-      const userMediaStream = await navigator.mediaDevices.getUserMedia(mediaDeviceConstraintsFromArgs);
+      const userMediaStream: MediaStream = await navigator.mediaDevices.getUserMedia(mediaDeviceConstraintsFromArgs);
 
-      //adding default onended and onmute listeners to stream
+      //adding default onended and onmute listeners to video tracks in case the stream end accidentally
       userMediaStream.getVideoTracks().map((track) => {
-        track.addEventListener('ended', () => {
-          setIsStreaming(false);
-        });
-        track.addEventListener('mute', () => {
-          setIsVideoMuted(true);
-        });
+        track.addEventListener('ended', handleOnVideoOrAudioEndedEvent);
+        track.addEventListener('mute', handleOnVideoMuteEvent);
       });
 
+      //adding default onended and onmute listeners to audio tracks in case the stream end accidentally
       userMediaStream.getAudioTracks().map((track) => {
-        track.addEventListener('ended', () => {
-          setIsStreaming(false);
-        });
-        track.addEventListener('mute', () => {
-          setIsAudioMuted(true);
-        });
+        track.addEventListener('ended', handleOnVideoOrAudioEndedEvent);
+        track.addEventListener('mute', handleOnAudioMuteEvent);
       });
 
       stream.current = userMediaStream;
       setGetStreamRequest(REQUEST_STATES.FULFILLED);
+
+      // returns a media stream
       return userMediaStream;
-    } catch (e: any) {
+    } catch (e: unknown) {
       setGetStreamRequest(REQUEST_STATES.REJECTED);
-      //TODO: capture error
-      //   getStreamRequestHandlers.rejected(e);
-      throw e;
+
+      // populate error in case the stream is not fetched
+      setError(e);
+      return null;
     }
   };
 
-  const start = async () => {
-    if (isStreaming) return;
+  /**
+   * Starts the media stream if not already streaming and returns the obtained media stream.
+   *
+   * @async
+   * @function start
+   * @returns {Promise<MediaStream | null>} A promise resolving to the started media stream.
+   */
+  const start = async (): Promise<MediaStream | null> => {
+    if (isStreaming) return stream.current;
 
-    const mediaStream = await initiateStream();
+    let mediaStream = stream.current || null;
 
-    // setting setIsStreaming here, to explicity tell user, that start function is called.
-    // setting this inside initiateStream will create confusion, as initiateStream is called by other fns like getMediaDevices
-    setIsStreaming(true);
+    if (!mediaStream) {
+      mediaStream = await initiateStream();
+    }
+
+    if (mediaStream) {
+      /**
+       * Set `isStreaming` explicitly in the `start` function to clarify that it's triggered by user call to start().
+       * Avoid setting it in `initiateStream` to prevent confusion as `initiateStream` is called by other functions like `getMediaDevices` also.
+       */
+      setIsStreaming(true);
+    }
+
     return mediaStream;
   };
 
-  const stop = () => {
+  /**
+   * stops the media stream if not already streaming and returns the obtained media stream.
+   *
+   * @function stop
+   * @returns void
+   */
+  const stop = (): void => {
     if (!isStreaming) return;
 
-    stream.current?.getTracks().forEach((track) => track.stop());
+    const userMediaStream = stream.current;
+
+    if (!userMediaStream) return;
+
+    //removing default eventListeners added in `initiateStream`
+    userMediaStream.getVideoTracks().map((track) => {
+      track.removeEventListener('ended', handleOnVideoOrAudioEndedEvent);
+      track.removeEventListener('mute', handleOnVideoMuteEvent);
+    });
+
+    //adding default onended and onmute listeners to audio tracks in case the stream end accidentally
+    userMediaStream.getAudioTracks().map((track) => {
+      track.removeEventListener('ended', handleOnVideoOrAudioEndedEvent);
+      track.removeEventListener('mute', handleOnAudioMuteEvent);
+    });
+
+    userMediaStream.getTracks().forEach((track) => track.stop());
+
+    // resetting the states
     stream.current = null;
     setIsStreaming(false);
-
     setGetStreamRequest(REQUEST_STATES.IDLE);
+    setError(null);
   };
 
-  const getMediaDevices = async () => {
-    setGetMediaDevicesRequest(REQUEST_STATES.PENDING);
+  /**
+   * Retrieves a list of available media devices.
+   * PS: This function internally initiates the media stream by calling `initiateStream` This is required to fetch devices, Read more here - https://stackoverflow.com/a/65366422/12383316
+   *
+   * @async
+   * @function getMediaDevices
+   * @throws {Error} If there is an error while obtaining the media devices or initiating the media stream.
+   * @returns {Promise<MediaDeviceInfo[]>} A promise resolving to an array of available media devices.
+   */
+  const getMediaDevices = async (): Promise<MediaDeviceInfo[]> => {
     if (!isSupported) {
       setGetMediaDevicesRequest(REQUEST_STATES.REJECTED);
+      const browserNotSupportedError = new Error('getUserMedia is not supported in this browser');
+      setError(browserNotSupportedError);
       return [];
     }
+
+    setError(null);
+    setGetMediaDevicesRequest(REQUEST_STATES.PENDING);
+
     try {
       if (!stream.current) {
         await initiateStream();
       }
-      const devices = await navigator.mediaDevices.enumerateDevices();
+      const devices: MediaDeviceInfo[] = await navigator.mediaDevices.enumerateDevices();
       setDevices(devices);
       setGetMediaDevicesRequest(REQUEST_STATES.FULFILLED);
       return devices;
-    } catch (e) {
+    } catch (e: unknown) {
       setGetMediaDevicesRequest(REQUEST_STATES.REJECTED);
-      //   getMediaDevicesHandlers.rejected(e);
-      // TODO: handle error
+      setError(e);
       return [];
     }
   };
 
+  /**
+   * Updates the media device constraints and optionally resets the media stream with the new constraints.
+   *
+   * @async
+   * @function updateMediaDeviceConstraints
+   * @param {Object} options - Options for updating the media device constraints.
+   * @param {MediaStreamConstraints} options.constraints - New constraints to be merged with existing ones.
+   * @param {boolean} options.resetStream - Whether to reset the media stream with the updated constraints.
+   * @returns {Promise<void>} A promise resolving after updating the constraints and, if requested, resetting the stream.
+   */
   const updateMediaDeviceConstraints = async ({
     constraints,
     resetStream = false,
@@ -151,93 +252,120 @@ const useMediaStream = (props?: useMediaStreamInterface) => {
   }) => {
     const updatedUserMediaConstraints = merge(mediaDeviceConstraints, constraints);
     setMediaDeviceConstraints(updatedUserMediaConstraints);
+
+    const isAlreadyStreaming = isStreaming;
     if (resetStream) {
+      setIsStreaming(false);
       stop();
       await initiateStream(updatedUserMediaConstraints);
-      setIsStreaming(true);
+      setIsStreaming(isAlreadyStreaming);
     }
   };
 
-  const muteAudio = () => {
-    if (!isStreaming) {
+  /**
+   * Mute all audio tracks in the streams
+   *
+   * @function muteAudio
+   */
+  const muteAudio = (): void => {
+    if (!stream.current) {
       return;
     }
-    stream.current?.getAudioTracks().forEach((t) => (t.enabled = false));
+    stream.current.getAudioTracks().forEach((t) => (t.enabled = false));
     setIsAudioMuted(true);
   };
 
-  const unmuteAudio = () => {
-    if (!isStreaming) {
+  /**
+   * Unmute all audio tracks in the streams
+   *
+   * @function unmuteAudio
+   */
+  const unmuteAudio = (): void => {
+    if (!stream.current) {
       return;
     }
-    stream.current?.getAudioTracks().forEach((t) => (t.enabled = true));
+    stream.current.getAudioTracks().forEach((t) => (t.enabled = true));
     setIsAudioMuted(false);
   };
 
-  const muteVideo = () => {
-    if (!isStreaming) {
+  /**
+   * Mute all video tracks in the streams
+   *
+   * @function muteVideo
+   */
+  const muteVideo = (): void => {
+    if (!stream.current) {
       return;
     }
-    stream.current?.getVideoTracks().forEach((t) => (t.enabled = false));
+    stream.current.getVideoTracks().forEach((t) => (t.enabled = false));
     setIsVideoMuted(true);
   };
 
-  const unmuteVideo = () => {
-    if (!isStreaming) {
+  /**
+   * Unmute all audio tracks in the streams
+   *
+   * @function unmuteVideo
+   */
+  const unmuteVideo = (): void => {
+    if (!stream.current) {
       return;
     }
-    stream.current?.getVideoTracks().forEach((t) => (t.enabled = true));
+    stream.current.getVideoTracks().forEach((t) => (t.enabled = true));
     setIsVideoMuted(false);
   };
 
-  // isStreaming should be false in such cases
+  // add event listeners on 'ended' and 'mute' events
+
   const addVideoEndedEventListener = (fn: EventListenerOrEventListenerObject) => {
-    stream.current?.getVideoTracks()?.map((track) => {
+    stream.current?.getVideoTracks().map((track) => {
       track.addEventListener('ended', fn);
     });
   };
 
   const addAudioEndedEventListener = (fn: EventListenerOrEventListenerObject) => {
-    stream.current?.getAudioTracks()?.map((track) => {
+    stream.current?.getAudioTracks().map((track) => {
       track.addEventListener('ended', fn);
     });
   };
 
   const addVideoMuteEventListener = (fn: EventListenerOrEventListenerObject) => {
-    stream.current?.getVideoTracks()?.map((track) => {
+    stream.current?.getVideoTracks().map((track) => {
       track.addEventListener('mute', fn);
     });
   };
 
   const addAudioMuteEventListener = (fn: EventListenerOrEventListenerObject) => {
-    stream.current?.getAudioTracks()?.map((track) => {
+    stream.current?.getAudioTracks().map((track) => {
       track.addEventListener('mute', fn);
     });
   };
 
+  // remove existing event listeners on 'ended' and 'mute' events
+
   const removeVideoEndedEventListener = (fn: EventListenerOrEventListenerObject) => {
-    stream.current?.getVideoTracks()?.map((track) => {
+    stream.current?.getVideoTracks().map((track) => {
       track.removeEventListener('ended', fn);
     });
   };
 
   const removeAudioEndedEventListener = (fn: EventListenerOrEventListenerObject) => {
-    stream.current?.getAudioTracks()?.map((track) => {
+    stream.current?.getAudioTracks().map((track) => {
       track.removeEventListener('ended', fn);
     });
   };
 
   const removeVideoMuteEventListener = (fn: EventListenerOrEventListenerObject) => {
-    stream.current?.getVideoTracks()?.map((track) => {
+    stream.current?.getVideoTracks().map((track) => {
       track.removeEventListener('mute', fn);
     });
   };
 
   const removeAudioMuteEventListener = (fn: EventListenerOrEventListenerObject) => {
-    stream.current?.getAudioTracks()?.map((track) => {
+    stream.current?.getAudioTracks().map((track) => {
       track.removeEventListener('mute', fn);
     });
   };
+
   return {
     stream: stream.current,
     isSupported,
@@ -257,6 +385,8 @@ const useMediaStream = (props?: useMediaStreamInterface) => {
 
     getStreamRequest,
     getMediaDevicesRequest,
+
+    error,
 
     // handlers
     start,

@@ -34,6 +34,13 @@ function MyComponent() {
 }
 ```
 
+## Props Values
+
+| Prop                            | Type                                   | Description                                                                                                                  |
+| ------------------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `mediaDeviceConstraints`        | `MediaStreamConstraints | null`        | The constraints for the media device to be used in the media stream.                                                         |
+
+
 
 ## Return Values
 

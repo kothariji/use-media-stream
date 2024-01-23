@@ -1,6 +1,6 @@
 # Use Media Stream
 
-[use-media-stream](https://www.react-fast-marquee.com) is a powerful React hook designed to streamline the integration and management of media streams within your React applications. It offers a comprehensive set of features and options for effortless control and manipulation of media streams. It provides a convenient interface for handling media devices, initiating media streams, and controlling audio and video tracks.
+[use-media-stream](https://www.npmjs.com/package/use-media-stream) is a powerful React hook designed to streamline the integration and management of media streams within your React applications. It offers a comprehensive set of features and options for effortless control and manipulation of media streams. It provides a convenient interface for handling media devices, initiating media streams, and controlling audio and video tracks.
 
 <a href="https://www.npmjs.com/package/use-media-stream">
     <img src="https://img.shields.io/npm/v/use-media-stream.svg" alt="npm package" />

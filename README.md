@@ -11,6 +11,8 @@
 
 ![GitHub License](https://img.shields.io/github/license/kothariji/use-media-stream)
 
+### Demo - [Link](https://stackblitz.com/edit/use-media-stream?file=src/App.tsx)
+
 ## Installation
 
 Install the hook using your preferred package manager:
@@ -82,9 +84,7 @@ function MyComponent() {
 
 ## Example
 
-TODO:
-
-<!-- For a detailed example of usage, refer to the provided example in the example directory. -->
+Demo - [Link](https://stackblitz.com/edit/use-media-stream?file=src/App.tsx)
 
 ## License
 

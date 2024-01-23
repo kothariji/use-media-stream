@@ -1,3 +1,4 @@
+
 # Use Media Stream
 
 [use-media-stream](https://www.react-fast-marquee.com) is a powerful React hook designed to streamline the integration and management of media streams within your React applications. It offers a comprehensive set of features and options for effortless control and manipulation of media streams. It provides a convenient interface for handling media devices, initiating media streams, and controlling audio and video tracks.
@@ -35,15 +36,15 @@ function MyComponent() {
 
 ## Props Values
 
-| Prop                     | Type                    | Description |
-| ------------------------ | ----------------------- | ----------- | -------------------------------------------------------------------- |
-| `mediaDeviceConstraints` | `MediaStreamConstraints | null`       | The constraints for the media device to be used in the media stream. |
+| Prop                     | Type                    | Description |                                                                      
+| ------------------------ | ----------------------- | ----------- | 
+| `mediaDeviceConstraints` | `MediaStreamConstraints \| null`       | The constraints for the media device to be used in the media stream. |
 
 ## Return Values
 
 | Property                        | Type                                               | Description                                                                                          |
-| ------------------------------- | -------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | -------------------------------- |
-| `stream`                        | `MediaStream                                       | null`                                                                                                | The current media stream object. |
+| ------------------------------- | -------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | 
+| `stream`                        | `MediaStream \| null`                              | The current media stream object.                                                                     |
 | `isStreaming`                   | `boolean`                                          | Indicates whether the media stream is currently active.                                              |
 | `isAudioMuted`                  | `boolean`                                          | Indicates whether audio tracks are muted.                                                            |
 | `isVideoMuted`                  | `boolean`                                          | Indicates whether video tracks are muted.                                                            |

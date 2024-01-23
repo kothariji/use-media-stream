@@ -6,7 +6,7 @@
     "module": "ESNext",
     "moduleResolution": "Node",
     "rootDir": "./src",
-    "outDir": "lib",
+    "outDir": "lib/esm",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true

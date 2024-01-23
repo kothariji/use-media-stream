@@ -1,6 +1,6 @@
 {
   "name": "use-media-stream",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "React hook that simplifies the integration and management of media streams with extensive control over devices, streaming status, and event handling.",
   "type": "module",
   "main": "lib/cjs/index.js",

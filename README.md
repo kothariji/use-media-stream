@@ -5,11 +5,11 @@
 <a href="https://www.npmjs.com/package/use-media-stream">
     <img src="https://img.shields.io/npm/v/use-media-stream.svg" alt="npm package" />
 </a>
-<a href="https://www.npmjs.com/package/use-media-stream">
+<!-- <a href="https://www.npmjs.com/package/use-media-stream">
   <img src="https://img.shields.io/npm/dm/use-media-stream.svg" alt="npm downloads" />
-</a>
+</a> -->
 
-![GitHub License](https://img.shields.io/github/license/kothariji/use-media-stream)
+![GitHub License](https://img.shields.io/github/license/kothariji/use-media-stream?q=1)
 
 ### Demo - [Link](https://stackblitz.com/edit/use-media-stream?file=src/App.tsx)
 

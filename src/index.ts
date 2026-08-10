@@ -219,7 +219,9 @@ const useMediaStream = (props?: UseMediaStreamProps) => {
     const updatedUserMediaConstraints = mergeConstraints(mediaDeviceConstraints, constraints);
     setMediaDeviceConstraints(updatedUserMediaConstraints);
 
-    if (!resetStream) return;
+    // Guards on the stream for the same reason `stop()` does. There is nothing to reset when no
+    // stream is open, and re-acquiring here would switch the camera on without being asked to.
+    if (!resetStream || !streamRef.current) return;
 
     // Constraints are passed explicitly below because the state update above has not flushed yet.
     const wasStreaming = isStreaming;
@@ -230,6 +232,10 @@ const useMediaStream = (props?: UseMediaStreamProps) => {
 
   /** Toggles `track.enabled`, which keeps the device open but stops it producing data. */
   const setTracksEnabled = (kind: TrackKind, enabled: boolean): void => {
+    // Bail before touching the flag: with no stream there is nothing to mute, and reporting
+    // otherwise leaves the flag contradicting the tracks once one is acquired.
+    if (!streamRef.current) return;
+
     tracksOf(streamRef.current, kind).forEach((track) => (track.enabled = enabled));
     (kind === 'audio' ? setIsAudioMuted : setIsVideoMuted)(!enabled);
   };

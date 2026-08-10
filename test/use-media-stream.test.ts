@@ -217,6 +217,21 @@ describe('devices', () => {
     expect(result.current.selectedVideoTrackDeviceWidth).toBe(1280);
   });
 
+  it('does not switch the camera on when resetting with no stream open', async () => {
+    const { result } = mount();
+    await act(async () => {
+      await result.current.updateMediaDeviceConstraints({ constraints: { video: { width: 640 } }, resetStream: true });
+    });
+
+    expect(getUserMedia).not.toHaveBeenCalled();
+
+    // the constraints are still recorded, and apply to the next stream
+    await act(async () => {
+      await result.current.start();
+    });
+    expect(getUserMedia.mock.calls[0][0]).toMatchObject({ video: { width: 640, facingMode: 'user' } });
+  });
+
   it('re-acquires with merged constraints when asked to reset', async () => {
     const { result } = mount();
     await act(async () => {
@@ -254,6 +269,15 @@ describe('mute', () => {
     act(() => result.current.muteVideo());
     expect(videoTrack.enabled).toBe(false);
     expect(result.current.isVideoMuted).toBe(true);
+  });
+
+  it('does not claim a track is muted when there is no stream', () => {
+    const { result } = mount();
+    act(() => result.current.muteAudio());
+    act(() => result.current.muteVideo());
+
+    expect(result.current.isAudioMuted).toBe(false);
+    expect(result.current.isVideoMuted).toBe(false);
   });
 
   // the mute flags used to be one-way: nothing listened for 'unmute'

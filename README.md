@@ -25,7 +25,8 @@ pnpm add use-media-stream
 Requires `react >= 16` as a peer dependency. Nothing else.
 
 > **Upgrading from v1?** `stop()` and unmounting now release the stream in cases where they
-> previously did not. See the [changelog](./CHANGELOG.md#200) for the full list.
+> previously did not, and nested constraint arrays are replaced rather than concatenated.
+> See the [changelog](./CHANGELOG.md) for the full list of breaking changes.
 
 ## Usage
 

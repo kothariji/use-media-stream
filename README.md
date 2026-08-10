@@ -1,13 +1,12 @@
 # Use Media Stream
 
-[use-media-stream](https://www.npmjs.com/package/use-media-stream) is a powerful React hook designed to streamline the integration and management of media streams within your React applications. It offers a comprehensive set of features and options for effortless control and manipulation of media streams. It provides a convenient interface for handling media devices, initiating media streams, and controlling audio and video tracks.
+[use-media-stream](https://www.npmjs.com/package/use-media-stream) is a React hook for working with `getUserMedia`. It handles acquiring and releasing streams, listing devices, muting tracks, and updating constraints, and it cleans up after itself when your component unmounts.
+
+Ships ESM and CommonJS, with TypeScript types. **Zero runtime dependencies.**
 
 <a href="https://www.npmjs.com/package/use-media-stream">
     <img src="https://img.shields.io/npm/v/use-media-stream.svg" alt="npm package" />
 </a>
-<!-- <a href="https://www.npmjs.com/package/use-media-stream">
-  <img src="https://img.shields.io/npm/dm/use-media-stream.svg" alt="npm downloads" />
-</a> -->
 
 ![GitHub License](https://img.shields.io/github/license/kothariji/use-media-stream?q=1)
 
@@ -15,81 +14,165 @@
 
 ## Installation
 
-Install the hook using your preferred package manager:
-
 ```bash
 npm install use-media-stream
-or
+# or
 yarn add use-media-stream
+# or
+pnpm add use-media-stream
 ```
+
+Requires `react >= 16` as a peer dependency. Nothing else.
 
 ## Usage
 
-Import the hook into your React component and leverage its capabilities to manage your media streams:
-
-```jsx
+```tsx
+import { useRef, useEffect } from 'react';
 import useMediaStream from 'use-media-stream';
 
-function MyComponent() {
-  const {
-    stream,
-    isSupported,
-    isStreaming,
-    isAudioMuted,
-    isVideoMuted,
-    // ... other properties and handlers
-  } = useMediaStream();
+function Camera() {
+  const { stream, isStreaming, error, start, stop, muteAudio } = useMediaStream();
+  const videoRef = useRef<HTMLVideoElement>(null);
 
-  // ... your component logic
+  useEffect(() => {
+    if (videoRef.current) videoRef.current.srcObject = stream;
+  }, [stream]);
+
+  if (error) return <p>{error.message}</p>;
+
+  return (
+    <>
+      <video ref={videoRef} autoPlay playsInline muted />
+      <button onClick={isStreaming ? stop : start}>{isStreaming ? 'Stop' : 'Start'}</button>
+      <button onClick={muteAudio}>Mute</button>
+    </>
+  );
 }
 ```
 
-## Props Values
+The hook is available as both a default and a named export:
 
-| Prop                     | Type                             | Description                                                          |
-| ------------------------ | -------------------------------- | -------------------------------------------------------------------- |
-| `mediaDeviceConstraints` | `MediaStreamConstraints \| null` | The constraints for the media device to be used in the media stream. |
+```ts
+import useMediaStream from 'use-media-stream';
+import { useMediaStream } from 'use-media-stream';
+```
 
-## Return Values
+> **The stream is released automatically when your component unmounts.** You only need to call
+> `stop()` to end a stream while the component is still mounted.
 
-| Property                        | Type                                               | Description                                                                                          |
-| ------------------------------- | -------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `stream`                        | `MediaStream \| null`                              | The current media stream object.                                                                     |
-| `isStreaming`                   | `boolean`                                          | Indicates whether the media stream is currently active.                                              |
-| `isAudioMuted`                  | `boolean`                                          | Indicates whether audio tracks are muted.                                                            |
-| `isVideoMuted`                  | `boolean`                                          | Indicates whether video tracks are muted.                                                            |
-| `devices`                       | `MediaDeviceInfo[]`                                | An array of available media devices.                                                                 |
-| `audioInputDevices`             | `MediaDeviceInfo[]`                                | An array of available audio input devices.                                                           |
-| `audioOutputDevices`            | `MediaDeviceInfo[]`                                | An array of available audio output devices.                                                          |
-| `videoInputDevices`             | `MediaDeviceInfo[]`                                | An array of available video input devices.                                                           |
-| `getStreamRequest`              | `REQUEST_STATES`                                   | The state of the request to obtain the media stream (`IDLE`, `PENDING`, `FULFILLED`, or `REJECTED`). |
-| `getMediaDevicesRequest`        | `REQUEST_STATES`                                   | The state of the request to obtain media devices (`IDLE`, `PENDING`, `FULFILLED`, or `REJECTED`).    |
-| `error`                         | `unknown`                                          | Any error that occurred during media stream or device retrieval.                                     |
-| `start`                         | `() => Promise<MediaStream \| null>`               | Initiates the media stream if not already streaming.                                                 |
-| `stop`                          | `() => void`                                       | Stops the media stream if currently streaming.                                                       |
-| `getMediaDevices`               | `() => Promise<MediaDeviceInfo[]>`                 | Retrieves a list of available media devices.                                                         |
-| `updateMediaDeviceConstraints`  | `({ constraints, resetStream }) => Promise<void>`  | Updates media device constraints and optionally resets the media stream.                             |
-| `muteAudio`                     | `() => void`                                       | Mutes all audio tracks in the media stream.                                                          |
-| `unmuteAudio`                   | `() => void`                                       | Unmutes all audio tracks in the media stream.                                                        |
-| `muteVideo`                     | `() => void`                                       | Mutes all video tracks in the media stream.                                                          |
-| `unmuteVideo`                   | `() => void`                                       | Unmutes all video tracks in the media stream.                                                        |
-| `addVideoEndedEventListener`    | `(fn: EventListenerOrEventListenerObject) => void` | Adds an event listener for 'ended' events on video tracks.                                           |
-| `addAudioEndedEventListener`    | `(fn: EventListenerOrEventListenerObject) => void` | Adds an event listener for 'ended' events on audio tracks.                                           |
-| `addVideoMuteEventListener`     | `(fn: EventListenerOrEventListenerObject) => void` | Adds an event listener for 'mute' events on video tracks.                                            |
-| `addAudioMuteEventListener`     | `(fn: EventListenerOrEventListenerObject) => void` | Adds an event listener for 'mute' events on audio tracks.                                            |
-| `removeVideoEndedEventListener` | `(fn: EventListenerOrEventListenerObject) => void` | Removes an event listener for 'ended' events on video tracks.                                        |
-| `removeAudioEndedEventListener` | `(fn: EventListenerOrEventListenerObject) => void` | Removes an event listener for 'ended' events on audio tracks.                                        |
-| `removeVideoMuteEventListener`  | `(fn: EventListenerOrEventListenerObject) => void` | Removes an event listener for 'mute' events on video tracks.                                         |
-| `removeAudioMuteEventListener`  | `(fn: EventListenerOrEventListenerObject) => void` | Removes an event listener for 'mute' events on audio tracks.                                         |
+## Props
 
-## Example
+| Prop                     | Type                              | Description                                            |
+| ------------------------ | --------------------------------- | ------------------------------------------------------ |
+| `mediaDeviceConstraints` | `MediaStreamConstraints \| null`  | Optional. Merged recursively over the defaults below.  |
 
-Demo - [Link](https://stackblitz.com/edit/use-media-stream?file=src/App.tsx)
+Both the argument and the field are optional, so `useMediaStream()`, `useMediaStream({})` and
+`useMediaStream({ mediaDeviceConstraints: { video: { width: 640 } } })` are all valid. Merging is
+recursive, so overriding `video.width` leaves the default `video.facingMode` in place.
+
+<details>
+<summary>Default constraints</summary>
+
+```ts
+{
+  audio: { deviceId: '' },
+  video: {
+    facingMode: 'user',
+    width: 1280,
+    height: 720,
+    frameRate: { ideal: 60, min: 10 },
+    deviceId: '',
+  },
+}
+```
+
+</details>
+
+## Returns
+
+### State
+
+| Property                            | Type                          | Description                                              |
+| ----------------------------------- | ----------------------------- | -------------------------------------------------------- |
+| `stream`                            | `MediaStream \| null`         | The current media stream.                                |
+| `isSupported`                       | `boolean`                     | Whether the browser supports `getUserMedia`.             |
+| `isStreaming`                       | `boolean`                     | Whether a stream started by `start()` is active.         |
+| `isAudioMuted`                      | `boolean`                     | Whether audio tracks are muted.                          |
+| `isVideoMuted`                      | `boolean`                     | Whether video tracks are muted.                          |
+| `error`                             | `Error \| null`               | The last error from acquiring a stream or devices.       |
+| `getStreamRequest`                  | `RequestState`                | `'IDLE' \| 'PENDING' \| 'FULFILLED' \| 'REJECTED'`       |
+| `getMediaDevicesRequest`            | `RequestState`                | Same, for the device listing.                            |
+
+### Devices
+
+| Property                            | Type                | Description                            |
+| ----------------------------------- | ------------------- | -------------------------------------- |
+| `devices`                           | `MediaDeviceInfo[]` | All devices, once `getMediaDevices()` has run. |
+| `audioInputDevices`                 | `MediaDeviceInfo[]` | Devices of kind `audioinput`.          |
+| `audioOutputDevices`                | `MediaDeviceInfo[]` | Devices of kind `audiooutput`.         |
+| `videoInputDevices`                 | `MediaDeviceInfo[]` | Devices of kind `videoinput`.          |
+| `selectedAudioTrackDeviceId`        | `string \| undefined` | From the live audio track's settings. |
+| `selectedVideoTrackDeviceId`        | `string \| undefined` | From the live video track's settings. |
+| `selectedVideoTrackDeviceWidth`     | `number \| undefined` | Actual width, which may differ from the requested one. |
+| `selectedVideoTrackDeviceHeight`    | `number \| undefined` | Actual height.                         |
+| `selectedVideoTrackDeviceAspectRatio` | `number \| undefined` | Actual aspect ratio.                 |
+
+### Handlers
+
+| Handler                        | Type                                                | Description                                          |
+| ------------------------------ | --------------------------------------------------- | ---------------------------------------------------- |
+| `start`                        | `() => Promise<MediaStream \| null>`                | Acquires a stream. Resolves to `null` on failure and populates `error`; it never throws. |
+| `stop`                         | `() => void`                                        | Stops every track and clears the stream.             |
+| `getMediaDevices`              | `() => Promise<MediaDeviceInfo[]>`                  | Lists devices. Acquires a stream first, because labels stay blank until permission is granted. Release it with `stop()`. |
+| `updateMediaDeviceConstraints` | `(options) => Promise<void>`                        | `{ constraints, resetStream? }`. Merges the constraints, and re-acquires the stream if `resetStream` is true. |
+| `muteAudio` / `unmuteAudio`    | `() => void`                                        | Toggles `enabled` on audio tracks. The device stays open. |
+| `muteVideo` / `unmuteVideo`    | `() => void`                                        | Toggles `enabled` on video tracks.                   |
+
+### Track events
+
+Attach your own listeners to the tracks the hook currently holds. They apply to the live tracks
+only, so re-attach after anything that replaces the stream.
+
+`addVideoEndedEventListener`, `addAudioEndedEventListener`, `addVideoMuteEventListener`,
+`addAudioMuteEventListener`, and a `remove…` counterpart for each — all
+`(fn: EventListenerOrEventListenerObject) => void`.
+
+### Exported types
+
+```ts
+import type {
+  RequestState,
+  TrackKind,
+  UpdateMediaDeviceConstraintsOptions,
+  UseMediaStreamProps,
+  UseMediaStreamReturn,
+} from 'use-media-stream';
+
+import { REQUEST_STATES, defaultMediaDeviceConstraints } from 'use-media-stream';
+```
+
+## Development
+
+```sh
+npm install
+npm run typecheck
+npm test
+npm run build
+```
+
+A playground is included for testing against a real camera. It aliases the package straight at
+`src/`, so edits hot-reload with no build step:
+
+```sh
+cd playground
+npm install
+npm run dev
+```
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE.md file for details.
+MIT — see [LICENSE](./LICENSE).
 
-## Acknowledgments
+## Contributing
 
-Feel free to use and contribute! If you encounter any issues or have suggestions, please [open an issue](https://github.com/kothariji/use-media-stream/issues).
+Issues and pull requests welcome — [open an issue](https://github.com/kothariji/use-media-stream/issues).

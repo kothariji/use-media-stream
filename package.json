@@ -28,7 +28,7 @@
   "scripts": {
     "build": "npm run build:esm && npm run build:cjs",
     "build:esm": "tsc -p tsconfig.build.json",
-    "build:cjs": "tsc -p tsconfig.build.json --module commonjs --moduleResolution bundler --outDir lib/cjs && node -e \"require('fs').writeFileSync('lib/cjs/package.json', JSON.stringify({ type: 'commonjs' }))\"",
+    "build:cjs": "tsc -p tsconfig.cjs.json && node scripts/mark-cjs.mjs",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "prepare": "npm run build"

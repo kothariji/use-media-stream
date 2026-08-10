@@ -1,0 +1,83 @@
+name: Release
+
+# Publishing happens here rather than from a laptop, so what reaches npm is always something
+# the full suite passed on.
+#
+#   npm version major && git push --follow-tags
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  verify:
+    name: Package
+    uses: ./.github/workflows/verify-package.yml
+
+  publish:
+    name: Publish to npm
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # create the GitHub Release
+      id-token: write # OIDC for trusted publishing, and for the provenance attestation
+    steps:
+      - uses: actions/checkout@v7
+      # Node 24 rather than 22: trusted publishing needs npm >= 11.5.1, and Node 22 still
+      # ships npm 10.x. Only affects how the package is published, not what it supports.
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          registry-url: https://registry.npmjs.org
+      - run: npm ci
+
+      - name: tag must match package.json version
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          PKG="$(node -p "require('./package.json').version")"
+          if [ "$TAG" != "$PKG" ]; then
+            echo "::error::tag v$TAG does not match package.json version $PKG"
+            exit 1
+          fi
+
+      - run: npm run typecheck
+      - run: npm test
+
+      # Authenticates via OIDC (npm trusted publishing) rather than a stored token. npm verifies
+      # a short-lived credential proving this exact repo and workflow produced the tarball, so
+      # there is no long-lived secret to leak or rotate. Configured on npmjs.com under the
+      # package's Trusted publishing settings, pinned to this filename.
+      #
+      # --provenance publishes a signed attestation tying the tarball to this commit and workflow.
+      #
+      # The dist-tag is derived rather than defaulted: `npm publish` tags as `latest` whatever the
+      # version says, so a v2.0.0-rc.0 tag would hand a release candidate to everyone running
+      # `npm install use-media-stream`. Prereleases go to `next`, and are installed deliberately.
+      - name: publish
+        run: |
+          echo "npm $(npm -v) on node $(node -v)"
+          case "$GITHUB_REF_NAME" in
+            *-*) DIST_TAG=next ;;
+            *)   DIST_TAG=latest ;;
+          esac
+          echo "publishing $GITHUB_REF_NAME to the '$DIST_TAG' tag"
+          npm publish --provenance --access public --tag "$DIST_TAG"
+
+      # A tag on its own is invisible: npm renders only the README, and CHANGELOG.md is seen
+      # solely by people browsing the repo. This puts the notes on the Releases page, which is
+      # what "Watch → Releases" notifies on. Generated from CHANGELOG.md so there is one source.
+      - name: create the GitHub Release
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          node scripts/changelog-section.mjs "$VERSION" > /tmp/notes.md
+          case "$GITHUB_REF_NAME" in
+            *-*) PRERELEASE=--prerelease ;;
+            *)   PRERELEASE= ;;
+          esac
+          gh release create "$GITHUB_REF_NAME" \
+            --title "$VERSION" \
+            --notes-file /tmp/notes.md \
+            --verify-tag \
+            $PRERELEASE
+        env:
+          GH_TOKEN: ${{ github.token }}

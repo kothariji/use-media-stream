@@ -1,25 +1,43 @@
 {
   "name": "use-media-stream",
-  "version": "1.0.3",
+  "version": "2.0.0-rc.3",
   "description": "React hook that simplifies the integration and management of media streams with extensive control over devices, streaming status, and event handling.",
   "type": "module",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./lib/esm/index.d.ts",
+        "default": "./lib/esm/index.js"
+      },
+      "require": {
+        "types": "./lib/cjs/index.d.ts",
+        "default": "./lib/cjs/index.js"
+      }
+    },
+    "./package.json": "./package.json"
+  },
   "main": "lib/cjs/index.js",
   "module": "lib/esm/index.js",
   "types": "lib/esm/index.d.ts",
+  "sideEffects": false,
   "files": [
     "lib",
     "LICENSE",
     "README.md"
   ],
   "scripts": {
-    "build": "npm run build:esm && npm run build:cjs",
-    "build:esm": "tsc",
-    "build:cjs": "tsc --module commonjs --outDir lib/cjs",
+    "build": "npm run clean && npm run build:esm && npm run build:cjs",
+    "clean": "node scripts/clean.mjs",
+    "build:esm": "tsc -p tsconfig.build.json",
+    "build:cjs": "tsc -p tsconfig.cjs.json && node scripts/mark-cjs.mjs",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage --coverage.include=src/**",
+    "verify:package": "npm run build && node scripts/verify-package.mjs",
+    "typecheck": "tsc --noEmit",
     "prepare": "npm run build"
-
   },
   "engines": {
-    "node": ">=16"
+    "node": ">=18"
   },
   "keywords": [
     "react",
@@ -45,14 +63,18 @@
     "url": "git+https://github.com/kothariji/use-media-stream.git"
   },
   "peerDependencies": {
-    "deepmerge": "^4.3.1",
     "react": ">=16"
   },
   "devDependencies": {
-    "@types/node": "^20.11.5",
-    "@types/react": "^18.2.48",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "typescript": "^5.3.3"
+    "@testing-library/react": "^16.3.2",
+    "@types/node": "^26.2.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "@vitest/coverage-v8": "^4.1.10",
+    "happy-dom": "^20.11.2",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
   }
 }

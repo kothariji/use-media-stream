@@ -1,0 +1,19 @@
+name: Verify package
+
+# Called by both ci.yml and release.yml, so the checks that gate a merge are byte-for-byte the
+# ones that gate a publish. Runs the same script you can run locally with `npm run verify:package`.
+on:
+  workflow_call:
+
+jobs:
+  entry-points:
+    name: Entry points
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run verify:package

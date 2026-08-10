@@ -305,6 +305,59 @@ describe('mute', () => {
   });
 });
 
+describe('referential stability', () => {
+  // A fresh array each render makes `useEffect(..., [audioInputDevices])` re-run forever.
+  it('keeps the device arrays stable across re-renders', async () => {
+    const { result, rerender } = mount();
+    await act(async () => {
+      await result.current.getMediaDevices();
+    });
+
+    const before = result.current.audioInputDevices;
+    rerender();
+    expect(result.current.audioInputDevices).toBe(before);
+    expect(result.current.videoInputDevices).toBe(result.current.videoInputDevices);
+  });
+
+  it('keeps the device arrays stable when unrelated state changes', async () => {
+    const { result } = mount();
+    await act(async () => {
+      await result.current.getMediaDevices();
+    });
+
+    const before = result.current.videoInputDevices;
+    act(() => result.current.muteAudio()); // flips isAudioMuted, nothing to do with devices
+    expect(result.current.videoInputDevices).toBe(before);
+  });
+
+  it('keeps the mute and listener handlers stable across re-renders', async () => {
+    const { result, rerender } = mount();
+    const before = {
+      muteAudio: result.current.muteAudio,
+      unmuteVideo: result.current.unmuteVideo,
+      addVideoEndedEventListener: result.current.addVideoEndedEventListener,
+      removeAudioMuteEventListener: result.current.removeAudioMuteEventListener,
+    };
+
+    rerender();
+    await act(async () => {
+      await result.current.start();
+    });
+
+    expect(result.current.muteAudio).toBe(before.muteAudio);
+    expect(result.current.unmuteVideo).toBe(before.unmuteVideo);
+    expect(result.current.addVideoEndedEventListener).toBe(before.addVideoEndedEventListener);
+    expect(result.current.removeAudioMuteEventListener).toBe(before.removeAudioMuteEventListener);
+  });
+
+  it('keeps stop stable across re-renders', () => {
+    const { result, rerender } = mount();
+    const before = result.current.stop;
+    rerender();
+    expect(result.current.stop).toBe(before);
+  });
+});
+
 describe('consumer event listeners', () => {
   it('adds and removes listeners on the live tracks', async () => {
     const { result } = mount();
@@ -320,5 +373,21 @@ describe('consumer event listeners', () => {
     act(() => result.current.removeVideoEndedEventListener(onEnded));
     act(() => videoTrack.emit('ended'));
     expect(onEnded).toHaveBeenCalledTimes(1);
+  });
+
+  it('exposes unmute listeners, matching the mute ones', async () => {
+    const { result } = mount();
+    await act(async () => {
+      await result.current.start();
+    });
+
+    const onUnmute = vi.fn();
+    act(() => result.current.addAudioUnmuteEventListener(onUnmute));
+    act(() => audioTrack.emit('unmute'));
+    expect(onUnmute).toHaveBeenCalledTimes(1);
+
+    act(() => result.current.removeAudioUnmuteEventListener(onUnmute));
+    act(() => audioTrack.emit('unmute'));
+    expect(onUnmute).toHaveBeenCalledTimes(1);
   });
 });

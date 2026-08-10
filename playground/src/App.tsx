@@ -37,6 +37,8 @@ function Panel({ log }: { log: LogFn }) {
     audioEnded: () => log('event: audio track "ended"'),
     videoMute: () => log('event: video track "mute"'),
     audioMute: () => log('event: audio track "mute"'),
+    videoUnmute: () => log('event: video track "unmute"'),
+    audioUnmute: () => log('event: audio track "unmute"'),
   }).current;
 
   const run = async (name: string, fn: () => unknown) => {
@@ -102,12 +104,16 @@ function Panel({ log }: { log: LogFn }) {
           <button onClick={() => { m.addAudioEndedEventListener(listeners.audioEnded); log('added audioEnded'); }}>+ audioEnded</button>
           <button onClick={() => { m.addVideoMuteEventListener(listeners.videoMute); log('added videoMute'); }}>+ videoMute</button>
           <button onClick={() => { m.addAudioMuteEventListener(listeners.audioMute); log('added audioMute'); }}>+ audioMute</button>
+          <button onClick={() => { m.addVideoUnmuteEventListener(listeners.videoUnmute); log('added videoUnmute'); }}>+ videoUnmute</button>
+          <button onClick={() => { m.addAudioUnmuteEventListener(listeners.audioUnmute); log('added audioUnmute'); }}>+ audioUnmute</button>
         </div>
         <div className="btns">
           <button onClick={() => { m.removeVideoEndedEventListener(listeners.videoEnded); log('removed videoEnded'); }}>− videoEnded</button>
           <button onClick={() => { m.removeAudioEndedEventListener(listeners.audioEnded); log('removed audioEnded'); }}>− audioEnded</button>
           <button onClick={() => { m.removeVideoMuteEventListener(listeners.videoMute); log('removed videoMute'); }}>− videoMute</button>
           <button onClick={() => { m.removeAudioMuteEventListener(listeners.audioMute); log('removed audioMute'); }}>− audioMute</button>
+          <button onClick={() => { m.removeVideoUnmuteEventListener(listeners.videoUnmute); log('removed videoUnmute'); }}>− videoUnmute</button>
+          <button onClick={() => { m.removeAudioUnmuteEventListener(listeners.audioUnmute); log('removed audioUnmute'); }}>− audioUnmute</button>
         </div>
         <p className="hint">
           Fire an <code>ended</code> event by unplugging the camera, or via the devtools console:{' '}

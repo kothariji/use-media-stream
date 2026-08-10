@@ -16,3 +16,6 @@ export interface UpdateMediaDeviceConstraintsOptions {
 }
 
 export type TrackKind = 'audio' | 'video';
+
+/** Track events the hook can attach consumer listeners to. */
+export type TrackEvent = 'ended' | 'mute' | 'unmute';

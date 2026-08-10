@@ -8,9 +8,7 @@ export const REQUEST_STATES = {
 
 /** Default media device constraints for initializing a media stream. */
 export const defaultMediaDeviceConstraints: MediaStreamConstraints = {
-  audio: {
-    deviceId: '',
-  },
+  audio: true,
   video: {
     facingMode: 'user',
     width: 1280,
@@ -19,6 +17,5 @@ export const defaultMediaDeviceConstraints: MediaStreamConstraints = {
       ideal: 60,
       min: 10,
     },
-    deviceId: '',
   },
 };

@@ -21,6 +21,9 @@
 
 ### Features
 
+- **Device arrays and handlers are referentially stable.** `audioInputDevices` and friends were rebuilt every render, so a consumer's `useEffect(..., [audioInputDevices])` looped forever. Handlers are memoised too, so they survive in `React.memo` children.
+- **`unmute` listeners are exposed**, matching the `mute` ones: `addVideoUnmuteEventListener`, `addAudioUnmuteEventListener` and their `remove` counterparts. The hook already listened internally.
+- Default constraints drop the meaningless `deviceId: ''` on audio and video, and `audio` is simply `true`.
 - Zero runtime dependencies — `deepmerge` was a peer dependency that pnpm and yarn 1 never installed.
 - Exports `UseMediaStreamProps`, `UpdateMediaDeviceConstraintsOptions`, `RequestState`, `TrackKind`, `UseMediaStreamReturn`, `REQUEST_STATES` and `defaultMediaDeviceConstraints`, plus the hook as a named export.
 - `mediaDeviceConstraints` and `resetStream` are optional, as they always were at runtime.

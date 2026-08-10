@@ -75,13 +75,12 @@ recursive, so overriding `video.width` leaves the default `video.facingMode` in 
 
 ```ts
 {
-  audio: { deviceId: '' },
+  audio: true,
   video: {
     facingMode: 'user',
     width: 1280,
     height: 720,
     frameRate: { ideal: 60, min: 10 },
-    deviceId: '',
   },
 }
 ```
@@ -133,9 +132,21 @@ recursive, so overriding `video.width` leaves the default `video.facingMode` in 
 Attach your own listeners to the tracks the hook currently holds. They apply to the live tracks
 only, so re-attach after anything that replaces the stream.
 
-`addVideoEndedEventListener`, `addAudioEndedEventListener`, `addVideoMuteEventListener`,
-`addAudioMuteEventListener`, and a `remove…` counterpart for each — all
-`(fn: EventListenerOrEventListenerObject) => void`.
+Every combination of `Video`/`Audio` × `Ended`/`Mute`/`Unmute`, with an `add`/`remove` pair each —
+twelve functions, all `(fn: EventListenerOrEventListenerObject) => void`:
+
+```
+add|remove + Video|Audio + Ended|Mute|Unmute + EventListener
+```
+
+e.g. `addVideoEndedEventListener`, `removeAudioUnmuteEventListener`.
+
+### Referential stability
+
+The device arrays and every handler keep a stable identity across renders, so they are safe as
+`useEffect` dependencies and in `React.memo` children. `start`, `getMediaDevices` and
+`updateMediaDeviceConstraints` change identity when the constraints or streaming state they close
+over change, which is the point — depend on them and you re-run when it actually matters.
 
 ### Exported types
 

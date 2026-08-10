@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { defaultMediaDeviceConstraints, REQUEST_STATES } from './constants.js';
 import { mergeConstraints, toError, tracksOf } from './utils.js';
 import type {
   RequestState,
+  TrackEvent,
   TrackKind,
   UpdateMediaDeviceConstraintsOptions,
   UseMediaStreamProps,
@@ -35,19 +36,16 @@ const useMediaStream = (props?: UseMediaStreamProps) => {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
-  const audioInputDevices: MediaDeviceInfo[] = [];
-  const audioOutputDevices: MediaDeviceInfo[] = [];
-  const videoInputDevices: MediaDeviceInfo[] = [];
-
-  devices.forEach((d: MediaDeviceInfo) => {
-    if (d.kind === 'audioinput') {
-      audioInputDevices.push(d);
-    } else if (d.kind === 'audiooutput') {
-      audioOutputDevices.push(d);
-    } else if (d.kind === 'videoinput') {
-      videoInputDevices.push(d);
-    }
-  });
+  // Memoised on identity, not just cost: a fresh array each render makes any consumer with
+  // `useEffect(..., [audioInputDevices])` re-run forever.
+  const { audioInputDevices, audioOutputDevices, videoInputDevices } = useMemo(
+    () => ({
+      audioInputDevices: devices.filter((d) => d.kind === 'audioinput'),
+      audioOutputDevices: devices.filter((d) => d.kind === 'audiooutput'),
+      videoInputDevices: devices.filter((d) => d.kind === 'videoinput'),
+    }),
+    [devices],
+  );
 
   const selectedAudioDeviceTrack = stream?.getAudioTracks()[0];
   const selectedVideoDeviceTrack = stream?.getVideoTracks()[0];
@@ -115,57 +113,54 @@ const useMediaStream = (props?: UseMediaStreamProps) => {
   useEffect(() => releaseStream, [releaseStream]);
 
   /** Acquires a stream. Resolves to `null` rather than throwing; the reason lands in `error`. */
-  const initiateStream = async (
-    mediaDeviceConstraintsFromArgs = mediaDeviceConstraints,
-  ): Promise<MediaStream | null> => {
-    // resetting the error state
-    setError(null);
+  const initiateStream = useCallback(
+    async (mediaDeviceConstraintsFromArgs = mediaDeviceConstraints): Promise<MediaStream | null> => {
+      // resetting the error state
+      setError(null);
 
-    // Guarded here rather than per-caller: `start` and `getMediaDevices` both route through this.
-    if (!isSupported) {
-      setGetStreamRequest(REQUEST_STATES.REJECTED);
-      setError(new Error('getUserMedia is not supported in this browser'));
-      return null;
-    }
+      // Guarded here rather than per-caller: `start` and `getMediaDevices` both route through this.
+      if (!isSupported) {
+        setGetStreamRequest(REQUEST_STATES.REJECTED);
+        setError(new Error('getUserMedia is not supported in this browser'));
+        return null;
+      }
 
-    setGetStreamRequest(REQUEST_STATES.PENDING);
+      setGetStreamRequest(REQUEST_STATES.PENDING);
 
-    try {
-      const userMediaStream: MediaStream = await navigator.mediaDevices.getUserMedia(mediaDeviceConstraintsFromArgs);
+      try {
+        const userMediaStream: MediaStream = await navigator.mediaDevices.getUserMedia(mediaDeviceConstraintsFromArgs);
 
-      // track the stream ending or going silent on its own
-      bindTrackEvents(userMediaStream, 'addEventListener');
-      streamRef.current = userMediaStream;
-      setStream(userMediaStream);
-      setGetStreamRequest(REQUEST_STATES.FULFILLED);
-      return userMediaStream;
-    } catch (e: unknown) {
-      setGetStreamRequest(REQUEST_STATES.REJECTED);
-      setError(toError(e));
-      return null;
-    }
-  };
+        // track the stream ending or going silent on its own
+        bindTrackEvents(userMediaStream, 'addEventListener');
+        streamRef.current = userMediaStream;
+        setStream(userMediaStream);
+        setGetStreamRequest(REQUEST_STATES.FULFILLED);
+        return userMediaStream;
+      } catch (e: unknown) {
+        setGetStreamRequest(REQUEST_STATES.REJECTED);
+        setError(toError(e));
+        return null;
+      }
+    },
+    [mediaDeviceConstraints, isSupported, bindTrackEvents],
+  );
 
   /** Starts the media stream if not already streaming. */
-  const start = async (): Promise<MediaStream | null> => {
+  const start = useCallback(async (): Promise<MediaStream | null> => {
     if (isStreaming) return streamRef.current;
 
-    let mediaStream = streamRef.current;
-
-    if (!mediaStream) {
-      mediaStream = await initiateStream();
-    }
+    const mediaStream = streamRef.current ?? (await initiateStream());
 
     if (mediaStream) {
       /**
-       * Set `isStreaming` explicitly in the `start` function to clarify that it's triggered by user call to start().
-       * Avoid setting it in `initiateStream` to prevent confusion as `initiateStream` is called by other functions like `getMediaDevices` also.
+       * Set `isStreaming` explicitly here rather than in `initiateStream`, which other callers
+       * like `getMediaDevices` also use — only an explicit start() means the consumer asked for it.
        */
       setIsStreaming(true);
     }
 
     return mediaStream;
-  };
+  }, [isStreaming, initiateStream]);
 
   /**
    * Releases the media stream and resets stream-related state.
@@ -173,7 +168,7 @@ const useMediaStream = (props?: UseMediaStreamProps) => {
    * Guards on the stream, not `isStreaming`: `getMediaDevices` acquires a stream without ever
    * setting that flag, so keying off it left those tracks running with no way to release them.
    */
-  const stop = (): void => {
+  const stop = useCallback((): void => {
     if (!streamRef.current) return;
 
     releaseStream(); // owns the ref
@@ -181,7 +176,7 @@ const useMediaStream = (props?: UseMediaStreamProps) => {
     setIsStreaming(false);
     setGetStreamRequest(REQUEST_STATES.IDLE);
     setError(null);
-  };
+  }, [releaseStream]);
 
   /**
    * Lists available media devices, acquiring a stream first because device labels stay blank
@@ -189,7 +184,7 @@ const useMediaStream = (props?: UseMediaStreamProps) => {
    *
    * The stream it opens is released by `stop()` like any other.
    */
-  const getMediaDevices = async (): Promise<MediaDeviceInfo[]> => {
+  const getMediaDevices = useCallback(async (): Promise<MediaDeviceInfo[]> => {
     setError(null);
     setGetMediaDevicesRequest(REQUEST_STATES.PENDING);
 
@@ -209,57 +204,70 @@ const useMediaStream = (props?: UseMediaStreamProps) => {
       setError(toError(e));
       return [];
     }
-  };
+  }, [initiateStream]);
 
   /** Merges new constraints over the current ones, optionally re-acquiring the stream with them. */
-  const updateMediaDeviceConstraints = async ({
-    constraints,
-    resetStream = false,
-  }: UpdateMediaDeviceConstraintsOptions): Promise<void> => {
-    const updatedUserMediaConstraints = mergeConstraints(mediaDeviceConstraints, constraints);
-    setMediaDeviceConstraints(updatedUserMediaConstraints);
+  const updateMediaDeviceConstraints = useCallback(
+    async ({ constraints, resetStream = false }: UpdateMediaDeviceConstraintsOptions): Promise<void> => {
+      const updatedUserMediaConstraints = mergeConstraints(mediaDeviceConstraints, constraints);
+      setMediaDeviceConstraints(updatedUserMediaConstraints);
 
-    // Guards on the stream for the same reason `stop()` does. There is nothing to reset when no
-    // stream is open, and re-acquiring here would switch the camera on without being asked to.
-    if (!resetStream || !streamRef.current) return;
+      // Guards on the stream for the same reason `stop()` does. There is nothing to reset when no
+      // stream is open, and re-acquiring here would switch the camera on without being asked to.
+      if (!resetStream || !streamRef.current) return;
 
-    // Constraints are passed explicitly below because the state update above has not flushed yet.
-    const wasStreaming = isStreaming;
-    stop();
-    const updatedStream = await initiateStream(updatedUserMediaConstraints);
-    setIsStreaming(wasStreaming && !!updatedStream);
-  };
+      // Constraints are passed explicitly below because the state update above has not flushed yet.
+      const wasStreaming = isStreaming;
+      stop();
+      const updatedStream = await initiateStream(updatedUserMediaConstraints);
+      setIsStreaming(wasStreaming && !!updatedStream);
+    },
+    [mediaDeviceConstraints, isStreaming, stop, initiateStream],
+  );
 
   /** Toggles `track.enabled`, which keeps the device open but stops it producing data. */
-  const setTracksEnabled = (kind: TrackKind, enabled: boolean): void => {
+  const setTracksEnabled = useCallback((kind: TrackKind, enabled: boolean): void => {
     // Bail before touching the flag: with no stream there is nothing to mute, and reporting
     // otherwise leaves the flag contradicting the tracks once one is acquired.
     if (!streamRef.current) return;
 
     tracksOf(streamRef.current, kind).forEach((track) => (track.enabled = enabled));
     (kind === 'audio' ? setIsAudioMuted : setIsVideoMuted)(!enabled);
-  };
+  }, []);
 
-  const muteAudio = (): void => setTracksEnabled('audio', false);
-  const unmuteAudio = (): void => setTracksEnabled('audio', true);
-  const muteVideo = (): void => setTracksEnabled('video', false);
-  const unmuteVideo = (): void => setTracksEnabled('video', true);
+  const muteAudio = useCallback((): void => setTracksEnabled('audio', false), [setTracksEnabled]);
+  const unmuteAudio = useCallback((): void => setTracksEnabled('audio', true), [setTracksEnabled]);
+  const muteVideo = useCallback((): void => setTracksEnabled('video', false), [setTracksEnabled]);
+  const unmuteVideo = useCallback((): void => setTracksEnabled('video', true), [setTracksEnabled]);
 
-  // Consumer-supplied 'ended' and 'mute' listeners. These apply to the tracks held right now,
-  // so they need re-adding after any call that replaces the stream.
-  const bind =
-    (kind: TrackKind, event: 'ended' | 'mute', action: 'addEventListener' | 'removeEventListener') =>
-    (fn: EventListenerOrEventListenerObject): void =>
-      tracksOf(streamRef.current, kind).forEach((track) => track[action](event, fn));
+  /**
+   * Consumer-supplied track listeners. These apply to the tracks held right now, so they need
+   * re-adding after anything that replaces the stream.
+   *
+   * Built once: every one of them reads `streamRef`, which never changes identity, so there is
+   * nothing for them to close over stalely.
+   */
+  const trackEventListeners = useMemo(() => {
+    const bind =
+      (kind: TrackKind, event: TrackEvent, action: 'addEventListener' | 'removeEventListener') =>
+      (fn: EventListenerOrEventListenerObject): void =>
+        tracksOf(streamRef.current, kind).forEach((track) => track[action](event, fn));
 
-  const addVideoEndedEventListener = bind('video', 'ended', 'addEventListener');
-  const addAudioEndedEventListener = bind('audio', 'ended', 'addEventListener');
-  const addVideoMuteEventListener = bind('video', 'mute', 'addEventListener');
-  const addAudioMuteEventListener = bind('audio', 'mute', 'addEventListener');
-  const removeVideoEndedEventListener = bind('video', 'ended', 'removeEventListener');
-  const removeAudioEndedEventListener = bind('audio', 'ended', 'removeEventListener');
-  const removeVideoMuteEventListener = bind('video', 'mute', 'removeEventListener');
-  const removeAudioMuteEventListener = bind('audio', 'mute', 'removeEventListener');
+    return {
+      addVideoEndedEventListener: bind('video', 'ended', 'addEventListener'),
+      addAudioEndedEventListener: bind('audio', 'ended', 'addEventListener'),
+      addVideoMuteEventListener: bind('video', 'mute', 'addEventListener'),
+      addAudioMuteEventListener: bind('audio', 'mute', 'addEventListener'),
+      addVideoUnmuteEventListener: bind('video', 'unmute', 'addEventListener'),
+      addAudioUnmuteEventListener: bind('audio', 'unmute', 'addEventListener'),
+      removeVideoEndedEventListener: bind('video', 'ended', 'removeEventListener'),
+      removeAudioEndedEventListener: bind('audio', 'ended', 'removeEventListener'),
+      removeVideoMuteEventListener: bind('video', 'mute', 'removeEventListener'),
+      removeAudioMuteEventListener: bind('audio', 'mute', 'removeEventListener'),
+      removeVideoUnmuteEventListener: bind('video', 'unmute', 'removeEventListener'),
+      removeAudioUnmuteEventListener: bind('audio', 'unmute', 'removeEventListener'),
+    };
+  }, []);
 
   return {
     stream,
@@ -295,14 +303,7 @@ const useMediaStream = (props?: UseMediaStreamProps) => {
     unmuteVideo,
 
     // event listeners
-    addVideoEndedEventListener,
-    addAudioEndedEventListener,
-    addVideoMuteEventListener,
-    addAudioMuteEventListener,
-    removeVideoEndedEventListener,
-    removeAudioEndedEventListener,
-    removeVideoMuteEventListener,
-    removeAudioMuteEventListener,
+    ...trackEventListeners,
   };
 };
 
@@ -314,7 +315,13 @@ const useMediaStream = (props?: UseMediaStreamProps) => {
 export type UseMediaStreamReturn = ReturnType<typeof useMediaStream>;
 
 export { REQUEST_STATES, defaultMediaDeviceConstraints } from './constants.js';
-export type { RequestState, TrackKind, UpdateMediaDeviceConstraintsOptions, UseMediaStreamProps } from './types.js';
+export type {
+  RequestState,
+  TrackEvent,
+  TrackKind,
+  UpdateMediaDeviceConstraintsOptions,
+  UseMediaStreamProps,
+} from './types.js';
 
 export { useMediaStream };
 export default useMediaStream;

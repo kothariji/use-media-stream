@@ -13,8 +13,12 @@ import type {
  * React hook for managing and integrating media streams within your application.
  */
 const useMediaStream = (props?: UseMediaStreamProps) => {
-  // check if the browser supports `getUserMedia`
-  const isSupported = !!navigator?.mediaDevices?.getUserMedia;
+  /**
+   * `typeof` rather than `navigator?.` — optional chaining still throws on an identifier that
+   * was never declared, and Node had no global `navigator` before 21. Without this the hook
+   * cannot be server-rendered at all on Node 18 or 20.
+   */
+  const isSupported = typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia;
   const [mediaDeviceConstraints, setMediaDeviceConstraints] = useState(() =>
     mergeConstraints(defaultMediaDeviceConstraints, props?.mediaDeviceConstraints ?? {}),
   );

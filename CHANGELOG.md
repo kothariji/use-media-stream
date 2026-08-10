@@ -8,6 +8,7 @@
 - **CommonJS builds load.** `"type": "module"` applies to every `.js` in the package, so Node loaded `lib/cjs` through the ESM loader and its requires resolved against the wrong base.
 - **ESM builds load in Node.** Emitted import specifiers were extensionless, which Node's ESM resolver rejects. Bundlers papered over it, so it went unnoticed.
 - **`start()` reports unsupported browsers properly** instead of throwing a raw `TypeError`.
+- **The hook can be server-rendered.** `isSupported` read `navigator?.mediaDevices`, but optional chaining still throws on an identifier that was never declared, and Node had no global `navigator` before v21. Any SSR render on Node 18 or 20 died with `ReferenceError: navigator is not defined`.
 - **`muteAudio()` / `muteVideo()` no longer set the mute flag when no stream is open.** The flag then contradicted the tracks once one was acquired.
 - **`updateMediaDeviceConstraints({ resetStream: true })` no longer switches the camera on when nothing is streaming.** There is nothing to reset in that case; the constraints are still recorded and apply to the next `start()`.
 

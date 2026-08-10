@@ -2,7 +2,7 @@
 
 [use-media-stream](https://www.npmjs.com/package/use-media-stream) is a React hook for working with `getUserMedia`. It handles acquiring and releasing streams, listing devices, muting tracks, and updating constraints, and it cleans up after itself when your component unmounts.
 
-Ships ESM and CommonJS, with TypeScript types. **Zero runtime dependencies.**
+Ships ESM and CommonJS, safe to server-render, published with provenance. **Zero runtime dependencies.**
 
 <a href="https://www.npmjs.com/package/use-media-stream">
     <img src="https://img.shields.io/npm/v/use-media-stream.svg" alt="npm package" />
@@ -23,6 +23,9 @@ pnpm add use-media-stream
 ```
 
 Requires `react >= 16` as a peer dependency. Nothing else.
+
+> **Upgrading from v1?** `stop()` and unmounting now release the stream in cases where they
+> previously did not. See the [changelog](./CHANGELOG.md#200) for the full list.
 
 ## Usage
 
@@ -59,6 +62,20 @@ import { useMediaStream } from 'use-media-stream';
 
 > **The stream is released automatically when your component unmounts.** You only need to call
 > `stop()` to end a stream while the component is still mounted.
+
+### Server rendering
+
+Safe to import and render on the server. `isSupported` is `false` there, and nothing touches
+`navigator` until you call something, so Next.js, Remix and friends render it without a
+`typeof window` dance:
+
+```tsx
+const { isSupported, start } = useMediaStream();
+// isSupported is false during SSR and on browsers without getUserMedia
+if (!isSupported) return <p>Camera not available</p>;
+```
+
+You still need a user gesture to call `start()` — browsers require one for `getUserMedia`.
 
 ## Props
 

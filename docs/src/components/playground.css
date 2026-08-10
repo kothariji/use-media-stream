@@ -1,0 +1,202 @@
+/**
+ * Everything is scoped under `.pg` and built from Starlight's custom properties, so the demo
+ * follows the Flexoki theme and its light/dark modes instead of carrying its own palette.
+ */
+
+.pg {
+  --pg-line: var(--sl-color-gray-5);
+  --pg-panel: var(--sl-color-black);
+  --pg-dim: var(--sl-color-gray-3);
+  --pg-mono: var(--sl-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+
+  font-size: var(--sl-text-sm);
+}
+
+.pg * {
+  box-sizing: border-box;
+}
+
+.pg-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.pg-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+
+.pg section,
+.pg-logbox {
+  background: var(--pg-panel);
+  border: 1px solid var(--pg-line);
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+/* Starlight styles headings globally; keep the demo's own quiet and compact. */
+.pg h2,
+.pg h3 {
+  font-size: var(--sl-text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--pg-dim);
+  margin: 1.25rem 0 0.5rem;
+  border: 0;
+  padding: 0;
+  font-weight: 600;
+}
+
+.pg section > h2:first-child {
+  margin-top: 0;
+}
+
+.pg small {
+  color: var(--pg-dim);
+  font-weight: 400;
+}
+
+.pg-video {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  border-radius: 0.375rem;
+  border: 1px solid var(--pg-line);
+}
+
+.pg-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.3rem 0;
+  border-bottom: 1px solid var(--pg-line);
+}
+
+.pg-row:last-child {
+  border-bottom: 0;
+}
+
+.pg-k {
+  color: var(--pg-dim);
+}
+
+.pg-v {
+  font-family: var(--pg-mono);
+  text-align: right;
+  word-break: break-all;
+}
+
+.pg-ok {
+  color: var(--sl-color-green-high, #3fb950);
+}
+
+.pg-bad {
+  color: var(--sl-color-red-high, #f85149);
+}
+
+.pg-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.pg button {
+  background: var(--sl-color-gray-6);
+  color: var(--sl-color-white);
+  border: 1px solid var(--pg-line);
+  border-radius: 0.375rem;
+  padding: 0.4rem 0.7rem;
+  font-size: var(--sl-text-xs);
+  font-family: var(--pg-mono);
+  cursor: pointer;
+  line-height: 1.4;
+}
+
+.pg button:hover {
+  border-color: var(--sl-color-text-accent);
+  color: var(--sl-color-text-accent);
+}
+
+.pg button.pg-danger {
+  border-color: var(--sl-color-red);
+  color: var(--sl-color-red);
+}
+
+.pg button.pg-primary {
+  border-color: var(--sl-color-green);
+  color: var(--sl-color-green);
+}
+
+.pg label {
+  display: block;
+  font-size: var(--sl-text-xs);
+  color: var(--pg-dim);
+  margin-bottom: 0.6rem;
+}
+
+.pg select,
+.pg input {
+  display: block;
+  width: 100%;
+  margin-top: 0.25rem;
+  background: var(--sl-color-bg);
+  color: var(--sl-color-white);
+  border: 1px solid var(--pg-line);
+  border-radius: 0.375rem;
+  padding: 0.35rem 0.5rem;
+  font-size: var(--sl-text-xs);
+}
+
+.pg-inline {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.pg-inline label {
+  flex: 1;
+}
+
+.pg-hint {
+  font-size: var(--sl-text-xs);
+  color: var(--pg-dim);
+  line-height: 1.5;
+  margin: 0.5rem 0 0;
+}
+
+.pg code {
+  font-size: 0.85em;
+}
+
+.pg-unmounted {
+  background: var(--pg-panel);
+  border: 1px dashed var(--sl-color-red);
+  border-radius: 0.5rem;
+  padding: 2rem;
+  text-align: center;
+  color: var(--sl-color-red);
+}
+
+.pg-logbox {
+  margin-top: 1rem;
+}
+
+.pg-logbox pre {
+  margin: 0;
+  max-height: 16rem;
+  overflow: auto;
+  background: none;
+  border: 0;
+  padding: 0;
+  font-family: var(--pg-mono);
+  font-size: var(--sl-text-xs);
+  line-height: 1.6;
+  color: var(--pg-dim);
+  white-space: pre-wrap;
+}

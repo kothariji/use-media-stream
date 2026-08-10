@@ -1,5 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import useMediaStream from 'use-media-stream';
+import './playground.css';
+
+/**
+ * The live demo. Renders with `client:only="react"` because the hook reads `navigator`, and
+ * Starlight prerenders every page.
+ *
+ * Imports `use-media-stream` through the Vite alias in astro.config.mjs, which points at
+ * ../../src — so this runs the real source and edits to the hook hot-reload here.
+ */
 
 type LogFn = (msg: string) => void;
 
@@ -9,9 +18,9 @@ function Row({ label, value }: { label: string; value: unknown }) {
   const ok = value === true;
   const bad = value === false;
   return (
-    <div className="row">
-      <span className="k">{label}</span>
-      <span className={`v ${ok ? 'ok' : ''} ${bad ? 'bad' : ''}`}>
+    <div className="pg-row">
+      <span className="pg-k">{label}</span>
+      <span className={`pg-v ${ok ? 'pg-ok' : ''} ${bad ? 'pg-bad' : ''}`}>
         {value === undefined || value === null || value === '' ? '—' : String(value)}
       </span>
     </div>
@@ -55,11 +64,11 @@ function Panel({ log }: { log: LogFn }) {
     run('updateMediaDeviceConstraints', () => m.updateMediaDeviceConstraints({ constraints, resetStream }));
 
   return (
-    <div className="grid">
+    <div className="pg-grid">
       <section>
         <h2>Preview</h2>
-        <video ref={videoRef} autoPlay playsInline muted className="video" />
-        <p className="hint">
+        <video ref={videoRef} autoPlay playsInline muted className="pg-video" />
+        <p className="pg-hint">
           Watch your camera LED. It should be off whenever <code>stream</code> is <code>—</code>.
         </p>
       </section>
@@ -84,14 +93,14 @@ function Panel({ log }: { log: LogFn }) {
 
       <section>
         <h2>Stream</h2>
-        <div className="btns">
+        <div className="pg-btns">
           <button onClick={() => run('start', m.start)}>start()</button>
           <button onClick={() => run('stop', m.stop)}>stop()</button>
           <button onClick={() => run('getMediaDevices', m.getMediaDevices)}>getMediaDevices()</button>
         </div>
 
         <h2>Mute (toggles track.enabled)</h2>
-        <div className="btns">
+        <div className="pg-btns">
           <button onClick={() => run('muteAudio', m.muteAudio)}>muteAudio()</button>
           <button onClick={() => run('unmuteAudio', m.unmuteAudio)}>unmuteAudio()</button>
           <button onClick={() => run('muteVideo', m.muteVideo)}>muteVideo()</button>
@@ -99,7 +108,7 @@ function Panel({ log }: { log: LogFn }) {
         </div>
 
         <h2>Event listeners</h2>
-        <div className="btns">
+        <div className="pg-btns">
           <button onClick={() => { m.addVideoEndedEventListener(listeners.videoEnded); log('added videoEnded'); }}>+ videoEnded</button>
           <button onClick={() => { m.addAudioEndedEventListener(listeners.audioEnded); log('added audioEnded'); }}>+ audioEnded</button>
           <button onClick={() => { m.addVideoMuteEventListener(listeners.videoMute); log('added videoMute'); }}>+ videoMute</button>
@@ -107,7 +116,7 @@ function Panel({ log }: { log: LogFn }) {
           <button onClick={() => { m.addVideoUnmuteEventListener(listeners.videoUnmute); log('added videoUnmute'); }}>+ videoUnmute</button>
           <button onClick={() => { m.addAudioUnmuteEventListener(listeners.audioUnmute); log('added audioUnmute'); }}>+ audioUnmute</button>
         </div>
-        <div className="btns">
+        <div className="pg-btns">
           <button onClick={() => { m.removeVideoEndedEventListener(listeners.videoEnded); log('removed videoEnded'); }}>− videoEnded</button>
           <button onClick={() => { m.removeAudioEndedEventListener(listeners.audioEnded); log('removed audioEnded'); }}>− audioEnded</button>
           <button onClick={() => { m.removeVideoMuteEventListener(listeners.videoMute); log('removed videoMute'); }}>− videoMute</button>
@@ -115,7 +124,7 @@ function Panel({ log }: { log: LogFn }) {
           <button onClick={() => { m.removeVideoUnmuteEventListener(listeners.videoUnmute); log('removed videoUnmute'); }}>− videoUnmute</button>
           <button onClick={() => { m.removeAudioUnmuteEventListener(listeners.audioUnmute); log('removed audioUnmute'); }}>− audioUnmute</button>
         </div>
-        <p className="hint">
+        <p className="pg-hint">
           Fire an <code>ended</code> event by unplugging the camera, or via the devtools console:{' '}
           <code>$0.srcObject.getVideoTracks()[0].stop()</code> on the video element.
         </p>
@@ -123,7 +132,7 @@ function Panel({ log }: { log: LogFn }) {
 
       <section>
         <h2>Devices <small>({m.devices.length})</small></h2>
-        <p className="hint">Labels stay blank until permission is granted — call getMediaDevices().</p>
+        <p className="pg-hint">Labels stay blank until permission is granted — call getMediaDevices().</p>
 
         <label>
           Audio input
@@ -162,7 +171,7 @@ function Panel({ log }: { log: LogFn }) {
         </label>
 
         <h2>Constraints</h2>
-        <div className="inline">
+        <div className="pg-inline">
           <label>w<input type="number" value={width} onChange={(e) => setWidth(+e.target.value)} /></label>
           <label>h<input type="number" value={height} onChange={(e) => setHeight(+e.target.value)} /></label>
           <label>
@@ -173,7 +182,7 @@ function Panel({ log }: { log: LogFn }) {
             </select>
           </label>
         </div>
-        <div className="btns">
+        <div className="pg-btns">
           <button onClick={() => setConstraints({ video: { width, height, facingMode } }, true)}>
             apply + reset stream
           </button>
@@ -186,7 +195,7 @@ function Panel({ log }: { log: LogFn }) {
   );
 }
 
-export default function App() {
+export default function Playground() {
   const [mounted, setMounted] = useState(true);
   const [lines, setLines] = useState<string[]>([]);
 
@@ -196,32 +205,37 @@ export default function App() {
   }, []);
 
   return (
-    <main>
-      <header>
-        <h1>use-media-stream <small>playground</small></h1>
-        <div className="btns">
-          <button className={mounted ? 'danger' : 'primary'} onClick={() => { log(mounted ? '— UNMOUNT hook —' : '— MOUNT hook —'); setMounted(!mounted); }}>
+    <div className="pg">
+      <div className="pg-bar">
+        <p className="pg-hint">
+          Runs entirely in your browser against the real hook. Your camera never leaves the page.
+        </p>
+        <div className="pg-btns">
+          <button
+            className={mounted ? 'pg-danger' : 'pg-primary'}
+            onClick={() => {
+              log(mounted ? '— UNMOUNT hook —' : '— MOUNT hook —');
+              setMounted(!mounted);
+            }}
+          >
             {mounted ? 'Unmount hook' : 'Mount hook'}
           </button>
           <button onClick={() => setLines([])}>clear log</button>
         </div>
-      </header>
-
-      <div className="repro">
-        <strong>Known bugs on v1.0.3</strong> — reproduce them here, then re-check after each fix:
-        <ol>
-          <li><code>getMediaDevices()</code> then <code>stop()</code> → camera stays on (stop() guards on isStreaming, which getMediaDevices never sets).</li>
-          <li>Start a stream, then <b>Unmount hook</b> → camera stays on (no unmount cleanup).</li>
-          <li>Trigger a track <code>mute</code> event → <code>isVideoMuted</code> sticks true forever (nothing listens for <code>unmute</code>).</li>
-        </ol>
       </div>
 
-      {mounted ? <Panel log={log} /> : <p className="unmounted">Hook is unmounted. Is your camera LED still on?</p>}
+      {mounted ? (
+        <Panel log={log} />
+      ) : (
+        <p className="pg-unmounted">
+          The hook is unmounted. Your camera light should be off — nothing was cleaned up by hand.
+        </p>
+      )}
 
-      <section className="logbox">
+      <section className="pg-logbox">
         <h2>Log</h2>
         <pre>{lines.join('\n') || 'nothing yet'}</pre>
       </section>
-    </main>
+    </div>
   );
 }

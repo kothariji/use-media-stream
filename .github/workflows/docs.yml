@@ -1,0 +1,42 @@
+name: Docs
+
+on:
+  push:
+    branches: [master]
+    paths: ['docs/**', 'src/**', '.github/workflows/docs.yml']
+  pull_request:
+    paths: ['docs/**', 'src/**', '.github/workflows/docs.yml']
+  workflow_dispatch:
+
+# `src/**` is a trigger because the demo page imports the hook source through a Vite alias, so a
+# change to the library can break the docs build without docs/ being touched.
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: withastro/action@v6
+        with:
+          path: docs
+          node-version: 22
+
+  deploy:
+    name: Deploy
+    # Pull requests build only. Deploying from a branch would overwrite the live site with
+    # unreviewed content.
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

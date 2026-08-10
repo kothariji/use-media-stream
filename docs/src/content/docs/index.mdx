@@ -1,0 +1,58 @@
+---
+title: use-media-stream
+description: A React hook for getUserMedia that cleans up after itself.
+template: splash
+hero:
+  tagline: A React hook for <code>getUserMedia</code> that cleans up after itself. Cameras, microphones, device switching and track muting — without the lifecycle bugs.
+  actions:
+    - text: Get started
+      link: ./installation/
+      icon: right-arrow
+    - text: Live demo
+      link: ./demo/
+      icon: laptop
+      variant: minimal
+    - text: GitHub
+      link: https://github.com/kothariji/use-media-stream
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid, Code, LinkCard } from '@astrojs/starlight/components';
+
+<Code code="npm install use-media-stream" lang="sh" />
+
+Getting a camera stream is one line. Getting it to _stop_ is where the bugs are — a component
+unmounts and the recording light stays on, a device list leaves an orphaned stream open, a track
+goes silent and your UI never notices.
+
+This hook owns that lifecycle so you don't have to.
+
+<CardGrid>
+  <Card title="Cleans up on unmount" icon="rocket">
+    Tracks are released when your component goes away. No lingering camera light, no `useEffect`
+    teardown to remember.
+  </Card>
+  <Card title="Mute without dropping the device" icon="setting">
+    Muting toggles `track.enabled`, so unmuting is instant and the browser doesn't prompt again.
+  </Card>
+  <Card title="Device switching built in" icon="laptop">
+    Devices split by kind, with the live track's real settings — the resolution you got, not the
+    one you asked for.
+  </Card>
+  <Card title="Server-safe" icon="star">
+    Renders in Next.js and Remix without a `typeof window` dance. `isSupported` is simply `false`.
+  </Card>
+  <Card title="Zero dependencies" icon="approve-check">
+    Nothing in your tree but the hook. ESM and CommonJS, fully typed, published with provenance.
+  </Card>
+  <Card title="Tested where it matters" icon="puzzle">
+    100% branch coverage, with the lifecycle leaks pinned by regression tests.
+  </Card>
+</CardGrid>
+
+## Next steps
+
+<LinkCard title="Installation" description="Install it, and what changed if you're coming from v1." href="./installation/" />
+<LinkCard title="Quick start" description="A working camera component in about fifteen lines." href="./quick-start/" />
+<LinkCard title="Live demo" description="Every function, wired to a real camera, in your browser." href="./demo/" />

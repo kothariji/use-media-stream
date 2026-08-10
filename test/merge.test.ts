@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { mergeConstraints } from '../src/index';
+import { mergeConstraints } from '../src/utils';
 
 const defaults: MediaStreamConstraints = {
   audio: { deviceId: '' },

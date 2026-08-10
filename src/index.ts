@@ -1,85 +1,31 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { REQUEST_STATES } from './constants';
-
-/**
- * Represents the configuration for using a media stream
- */
-interface useMediaStreamInterface {
-  /**
-   * The constraints for the media device to be used in the media stream.
-   * @type {MediaStreamConstraints | null}
-   */
-  mediaDeviceConstraints: MediaStreamConstraints | null;
-}
-
-/**
- * Default media device constraints for initializing a media stream.
- * @type {MediaStreamConstraints}
- */
-const defaultMediaDeviceConstraints: MediaStreamConstraints = {
-  audio: {
-    deviceId: '',
-  },
-  video: {
-    facingMode: 'user',
-    width: 1280,
-    height: 720,
-    frameRate: {
-      ideal: 60,
-      min: 10,
-    },
-    deviceId: '',
-  },
-};
-
-type PlainObject = Record<string, unknown>;
-
-const isPlainObject = (value: unknown): value is PlainObject =>
-  typeof value === 'object' && value !== null && !Array.isArray(value);
-
-const mergePlain = (base: PlainObject, override: PlainObject): PlainObject => {
-  const merged: PlainObject = { ...base };
-  for (const [key, value] of Object.entries(override)) {
-    const existing = merged[key];
-    merged[key] = isPlainObject(existing) && isPlainObject(value) ? mergePlain(existing, value) : value;
-  }
-  return merged;
-};
-
-/**
- * Recursively merges constraints, so `{ video: { width: 640 } }` keeps the default `facingMode`.
- *
- * ponytail: replaces the `deepmerge` dependency for the sake of one call. Behaves the same on
- * plain objects; arrays are replaced rather than concatenated, since concatenating something
- * like `deviceId: { exact: [...] }` across a merge produces a constraint nobody asked for.
- */
-export const mergeConstraints = (
-  base: MediaStreamConstraints,
-  override: MediaStreamConstraints,
-): MediaStreamConstraints => mergePlain(base as PlainObject, override as PlainObject) as MediaStreamConstraints;
-
-type TrackKind = 'audio' | 'video';
-
-const tracksOf = (mediaStream: MediaStream | null | undefined, kind: TrackKind): MediaStreamTrack[] =>
-  !mediaStream ? [] : kind === 'audio' ? mediaStream.getAudioTracks() : mediaStream.getVideoTracks();
+import { defaultMediaDeviceConstraints, REQUEST_STATES } from './constants';
+import { mergeConstraints, toError, tracksOf } from './utils';
+import type {
+  RequestState,
+  TrackKind,
+  UpdateMediaDeviceConstraintsOptions,
+  UseMediaStreamProps,
+} from './types';
 
 /**
  * React hook for managing and integrating media streams within your application.
  */
-const useMediaStream = (props?: useMediaStreamInterface) => {
+const useMediaStream = (props?: UseMediaStreamProps) => {
   // check if the browser supports `getUserMedia`
   const isSupported = !!navigator?.mediaDevices?.getUserMedia;
   const [mediaDeviceConstraints, setMediaDeviceConstraints] = useState(() =>
     mergeConstraints(defaultMediaDeviceConstraints, props?.mediaDeviceConstraints ?? {}),
   );
-  const [getStreamRequest, setGetStreamRequest] = useState(REQUEST_STATES.IDLE);
-  const [getMediaDevicesRequest, setGetMediaDevicesRequest] = useState(REQUEST_STATES.IDLE);
+  // Annotated, otherwise `as const` on REQUEST_STATES narrows these to the literal 'IDLE'.
+  const [getStreamRequest, setGetStreamRequest] = useState<RequestState>(REQUEST_STATES.IDLE);
+  const [getMediaDevicesRequest, setGetMediaDevicesRequest] = useState<RequestState>(REQUEST_STATES.IDLE);
 
   // `isStreaming` is a flag that holds true when the start() function is called.
   const [isStreaming, setIsStreaming] = useState(false);
 
   //global state for capturing any error in while fetching the stream or devices
-  const [error, setError] = useState<unknown>(null);
+  const [error, setError] = useState<Error | null>(null);
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const [isAudioMuted, setIsAudioMuted] = useState(false);
   const [isVideoMuted, setIsVideoMuted] = useState(false);
@@ -195,7 +141,7 @@ const useMediaStream = (props?: useMediaStreamInterface) => {
       return userMediaStream;
     } catch (e: unknown) {
       setGetStreamRequest(REQUEST_STATES.REJECTED);
-      setError(e);
+      setError(toError(e));
       return null;
     }
   };
@@ -260,7 +206,7 @@ const useMediaStream = (props?: useMediaStreamInterface) => {
       return devices;
     } catch (e: unknown) {
       setGetMediaDevicesRequest(REQUEST_STATES.REJECTED);
-      setError(e);
+      setError(toError(e));
       return [];
     }
   };
@@ -269,10 +215,7 @@ const useMediaStream = (props?: useMediaStreamInterface) => {
   const updateMediaDeviceConstraints = async ({
     constraints,
     resetStream = false,
-  }: {
-    constraints: MediaStreamConstraints;
-    resetStream: boolean;
-  }) => {
+  }: UpdateMediaDeviceConstraintsOptions): Promise<void> => {
     const updatedUserMediaConstraints = mergeConstraints(mediaDeviceConstraints, constraints);
     setMediaDeviceConstraints(updatedUserMediaConstraints);
 
@@ -357,4 +300,15 @@ const useMediaStream = (props?: useMediaStreamInterface) => {
   };
 };
 
+/**
+ * Everything the hook returns.
+ *
+ * ponytail: derived rather than hand-written, so it cannot drift from the implementation.
+ */
+export type UseMediaStreamReturn = ReturnType<typeof useMediaStream>;
+
+export { REQUEST_STATES, defaultMediaDeviceConstraints } from './constants';
+export type { RequestState, TrackKind, UpdateMediaDeviceConstraintsOptions, UseMediaStreamProps } from './types';
+
+export { useMediaStream };
 export default useMediaStream;

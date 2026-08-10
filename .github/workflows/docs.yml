@@ -17,6 +17,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      # The demo imports the hook from ../src, which imports react. TypeScript resolves that from
+      # the repo root, so without the root install the hook's types silently degrade to `any` and
+      # `astro check` fails on implicit-any callbacks. The astro action only installs in docs/.
+      - name: install root dependencies
+        run: npm ci --ignore-scripts
       - uses: withastro/action@v6
         with:
           path: docs

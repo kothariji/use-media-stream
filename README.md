@@ -98,6 +98,7 @@ The docs site doubles as the development playground — it imports the hook from
 hot-reload against a real camera:
 
 ```sh
+npm install            # root first: the docs typecheck resolves react from here
 cd docs && npm install && npm run dev
 ```
 

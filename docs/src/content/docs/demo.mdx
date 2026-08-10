@@ -14,7 +14,14 @@ no `useEffect` cleanup. Then try **getMediaDevices()** followed by **stop()**; t
 v1.
 :::
 
-<Playground client:only="react" />
+{/*
+  `not-content` opts the panel out of Starlight's prose styles. Without it, its rule giving every
+  adjacent sibling `margin-top: 1rem` applies to buttons too, so each one in a row sits lower than
+  the one before it.
+*/}
+<div data-wide class="not-content">
+  <Playground client:only="react" />
+</div>
 
 ## What you're looking at
 

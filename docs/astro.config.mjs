@@ -21,6 +21,7 @@ export default defineConfig({
       ],
       editLink: { baseUrl: `${repo}/edit/master/docs/` },
       lastUpdated: true,
+      customCss: ['./src/styles/wide-page.css'],
       sidebar: [
         {
           label: 'Start here',

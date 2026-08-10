@@ -1,6 +1,9 @@
 /**
  * Everything is scoped under `.pg` and built from Starlight's custom properties, so the demo
  * follows the Flexoki theme and its light/dark modes instead of carrying its own palette.
+ *
+ * Deliberately denser than the surrounding prose — it is a control panel, not an article, and
+ * the whole thing should fit on one screen rather than scrolling past the video.
  */
 
 .pg {
@@ -8,13 +11,18 @@
   --pg-panel: var(--sl-color-black);
   --pg-dim: var(--sl-color-gray-3);
   --pg-mono: var(--sl-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  --pg-fs: 0.8125rem;
+  --pg-fs-sm: 0.75rem;
 
-  font-size: var(--sl-text-sm);
+  font-size: var(--pg-fs);
+  line-height: 1.45;
 }
 
 .pg * {
   box-sizing: border-box;
 }
+
+/* ── shell ─────────────────────────────────────────────────────────────── */
 
 .pg-bar {
   display: flex;
@@ -22,38 +30,47 @@
   justify-content: space-between;
   gap: 1rem;
   flex-wrap: wrap;
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
 }
 
-.pg-grid {
+/* Video and its controls on the left, live state on the right, so you can watch a value change
+   while pressing the button that changes it. */
+.pg-layout {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr) minmax(230px, 17rem);
+  gap: 0.75rem;
   align-items: start;
 }
 
-.pg section,
+@media (max-width: 60rem) {
+  .pg-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.pg-stage,
+.pg-state,
 .pg-logbox {
   background: var(--pg-panel);
   border: 1px solid var(--pg-line);
   border-radius: 0.5rem;
-  padding: 1rem;
+  padding: 0.75rem;
 }
 
-/* Starlight styles headings globally; keep the demo's own quiet and compact. */
 .pg h2,
 .pg h3 {
-  font-size: var(--sl-text-xs);
+  font-size: var(--pg-fs-sm);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.07em;
   color: var(--pg-dim);
-  margin: 1.25rem 0 0.5rem;
+  margin: 0.9rem 0 0.4rem;
   border: 0;
   padding: 0;
   font-weight: 600;
+  line-height: 1.3;
 }
 
-.pg section > h2:first-child {
+.pg h2:first-child {
   margin-top: 0;
 }
 
@@ -62,20 +79,192 @@
   font-weight: 400;
 }
 
+/* ── video ─────────────────────────────────────────────────────────────── */
+
+.pg-videowrap {
+  position: relative;
+}
+
 .pg-video {
+  display: block;
   width: 100%;
   aspect-ratio: 16 / 9;
+  max-height: 42vh;
+  object-fit: cover;
   background: #000;
   border-radius: 0.375rem;
   border: 1px solid var(--pg-line);
 }
 
+.pg-videonote {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-family: var(--pg-mono);
+  font-size: var(--pg-fs-sm);
+  color: var(--pg-dim);
+  pointer-events: none;
+}
+
+/* ── buttons ───────────────────────────────────────────────────────────── */
+
+.pg-btns {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0.6rem 0 0;
+}
+
+.pg-sep {
+  width: 1px;
+  align-self: stretch;
+  background: var(--pg-line);
+  margin: 0 0.25rem;
+}
+
+.pg button {
+  /* `margin: 0` is deliberate. Starlight gives adjacent siblings margin-top: 1rem and does not
+     exclude buttons, which left every button in a row sitting lower than the one before it. The
+     wrapper carries `not-content` too; this makes the panel immune either way. */
+  margin: 0;
+  background: var(--sl-color-gray-6);
+  color: var(--sl-color-white);
+  border: 1px solid var(--pg-line);
+  border-radius: 0.3rem;
+  padding: 0.25rem 0.5rem;
+  font-size: var(--pg-fs-sm);
+  font-family: var(--pg-mono);
+  cursor: pointer;
+  line-height: 1.4;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.pg button:hover {
+  border-color: var(--sl-color-text-accent);
+  color: var(--sl-color-text-accent);
+}
+
+.pg button.pg-danger {
+  border-color: var(--sl-color-red);
+  color: var(--sl-color-red);
+}
+
+.pg button.pg-primary {
+  border-color: var(--sl-color-green);
+  color: var(--sl-color-green);
+}
+
+/* ── tabs ──────────────────────────────────────────────────────────────── */
+
+.pg-tabs {
+  display: flex;
+  gap: 0.25rem;
+  margin: 0.75rem 0 0;
+  border-bottom: 1px solid var(--pg-line);
+}
+
+.pg .pg-tab {
+  background: none;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  color: var(--pg-dim);
+  padding: 0.3rem 0.55rem;
+  margin-bottom: -1px;
+}
+
+.pg .pg-tab:hover {
+  color: var(--sl-color-white);
+}
+
+.pg .pg-tab-on {
+  color: var(--sl-color-text-accent);
+  border-bottom-color: var(--sl-color-text-accent);
+}
+
+.pg-badge {
+  margin-left: 0.35rem;
+  padding: 0 0.3rem;
+  border-radius: 0.6rem;
+  background: var(--sl-color-gray-5);
+  color: var(--sl-color-white);
+  font-size: 0.65rem;
+}
+
+.pg-tabpanel {
+  padding-top: 0.7rem;
+  min-height: 7.5rem;
+}
+
+/* ── form controls ─────────────────────────────────────────────────────── */
+
+.pg label {
+  display: block;
+  font-size: var(--pg-fs-sm);
+  color: var(--pg-dim);
+  margin: 0;
+}
+
+.pg select,
+.pg input {
+  display: block;
+  width: 100%;
+  margin-top: 0.2rem;
+  background: var(--sl-color-bg);
+  color: var(--sl-color-white);
+  border: 1px solid var(--pg-line);
+  border-radius: 0.3rem;
+  padding: 0.25rem 0.4rem;
+  font-size: var(--pg-fs-sm);
+}
+
+.pg-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.pg-inline label {
+  flex: 1 1 10rem;
+}
+
+/* ── events tab ────────────────────────────────────────────────────────── */
+
+.pg-events {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 0.3rem 0.75rem;
+}
+
+.pg-eventrow {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-family: var(--pg-mono);
+  font-size: var(--pg-fs-sm);
+  color: var(--pg-dim);
+}
+
+.pg-eventrow span {
+  flex: 1;
+}
+
+.pg-eventrow button {
+  padding: 0.1rem 0.45rem;
+}
+
+/* ── state readout ─────────────────────────────────────────────────────── */
+
 .pg-row {
   display: flex;
   justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.3rem 0;
+  gap: 0.5rem;
+  padding: 0.2rem 0;
   border-bottom: 1px solid var(--pg-line);
+  font-size: var(--pg-fs-sm);
 }
 
 .pg-row:last-child {
@@ -100,103 +289,62 @@
   color: var(--sl-color-red-high, #f85149);
 }
 
-.pg-btns {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
-}
-
-.pg button {
-  background: var(--sl-color-gray-6);
-  color: var(--sl-color-white);
-  border: 1px solid var(--pg-line);
-  border-radius: 0.375rem;
-  padding: 0.4rem 0.7rem;
-  font-size: var(--sl-text-xs);
-  font-family: var(--pg-mono);
-  cursor: pointer;
-  line-height: 1.4;
-}
-
-.pg button:hover {
-  border-color: var(--sl-color-text-accent);
-  color: var(--sl-color-text-accent);
-}
-
-.pg button.pg-danger {
-  border-color: var(--sl-color-red);
-  color: var(--sl-color-red);
-}
-
-.pg button.pg-primary {
-  border-color: var(--sl-color-green);
-  color: var(--sl-color-green);
-}
-
-.pg label {
-  display: block;
-  font-size: var(--sl-text-xs);
-  color: var(--pg-dim);
-  margin-bottom: 0.6rem;
-}
-
-.pg select,
-.pg input {
-  display: block;
-  width: 100%;
-  margin-top: 0.25rem;
-  background: var(--sl-color-bg);
-  color: var(--sl-color-white);
-  border: 1px solid var(--pg-line);
-  border-radius: 0.375rem;
-  padding: 0.35rem 0.5rem;
-  font-size: var(--sl-text-xs);
-}
-
-.pg-inline {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.pg-inline label {
-  flex: 1;
-}
+/* ── misc ──────────────────────────────────────────────────────────────── */
 
 .pg-hint {
-  font-size: var(--sl-text-xs);
+  font-size: var(--pg-fs-sm);
   color: var(--pg-dim);
-  line-height: 1.5;
+  line-height: 1.45;
   margin: 0.5rem 0 0;
 }
 
+.pg-bar .pg-hint {
+  margin: 0;
+}
+
+/* `not-content` on the wrapper removes Starlight's inline-code styling along with everything
+   else, so the panel restores a minimal version for the hint text. */
 .pg code {
-  font-size: 0.85em;
+  font-family: var(--pg-mono);
+  font-size: 0.9em;
+  background: var(--sl-color-gray-6);
+  border-radius: 0.2rem;
+  padding: 0.05rem 0.25rem;
 }
 
 .pg-unmounted {
   background: var(--pg-panel);
   border: 1px dashed var(--sl-color-red);
   border-radius: 0.5rem;
-  padding: 2rem;
+  padding: 2rem 1rem;
   text-align: center;
   color: var(--sl-color-red);
+  margin: 0;
 }
 
 .pg-logbox {
-  margin-top: 1rem;
+  margin-top: 0.75rem;
+}
+
+.pg-logbox summary {
+  font-size: var(--pg-fs-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--pg-dim);
+  cursor: pointer;
+  font-weight: 600;
 }
 
 .pg-logbox pre {
-  margin: 0;
-  max-height: 16rem;
+  margin: 0.5rem 0 0;
+  max-height: 10rem;
   overflow: auto;
   background: none;
   border: 0;
   padding: 0;
   font-family: var(--pg-mono);
-  font-size: var(--sl-text-xs);
-  line-height: 1.6;
+  font-size: var(--pg-fs-sm);
+  line-height: 1.55;
   color: var(--pg-dim);
   white-space: pre-wrap;
 }

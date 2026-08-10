@@ -1,4 +1,4 @@
-import type { TrackKind } from './types';
+import type { TrackKind } from './types.js';
 
 type PlainObject = Record<string, unknown>;
 

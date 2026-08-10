@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { defaultMediaDeviceConstraints, REQUEST_STATES } from './constants';
-import { mergeConstraints, toError, tracksOf } from './utils';
+import { defaultMediaDeviceConstraints, REQUEST_STATES } from './constants.js';
+import { mergeConstraints, toError, tracksOf } from './utils.js';
 import type {
   RequestState,
   TrackKind,
   UpdateMediaDeviceConstraintsOptions,
   UseMediaStreamProps,
-} from './types';
+} from './types.js';
 
 /**
  * React hook for managing and integrating media streams within your application.
@@ -307,8 +307,8 @@ const useMediaStream = (props?: UseMediaStreamProps) => {
  */
 export type UseMediaStreamReturn = ReturnType<typeof useMediaStream>;
 
-export { REQUEST_STATES, defaultMediaDeviceConstraints } from './constants';
-export type { RequestState, TrackKind, UpdateMediaDeviceConstraintsOptions, UseMediaStreamProps } from './types';
+export { REQUEST_STATES, defaultMediaDeviceConstraints } from './constants.js';
+export type { RequestState, TrackKind, UpdateMediaDeviceConstraintsOptions, UseMediaStreamProps } from './types.js';
 
 export { useMediaStream };
 export default useMediaStream;

@@ -6,7 +6,7 @@ import useMediaStream, {
   type UpdateMediaDeviceConstraintsOptions,
   type UseMediaStreamProps,
   type UseMediaStreamReturn,
-} from '../src/index';
+} from '../src/index.js';
 
 /**
  * Compile-time assertions. These are checked by `npm run typecheck`, not by vitest — each

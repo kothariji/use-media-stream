@@ -9,6 +9,7 @@
     "noEmit": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
+    "types": ["vite/client"],
     "paths": {
       "use-media-stream": ["../src/index.ts"]
     }

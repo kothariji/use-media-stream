@@ -1,0 +1,51 @@
+---
+title: Live demo
+description: Every function in use-media-stream, wired to your real camera, running in the browser.
+---
+
+import Playground from '../../components/Playground.tsx';
+
+Every function the hook exposes, wired to your actual camera. It runs entirely in your browser —
+nothing is uploaded, and the page needs camera permission to do anything interesting.
+
+:::tip[Try the thing this library exists for]
+Press **start()**, then **Unmount hook**. The camera light goes out on its own — no teardown code,
+no `useEffect` cleanup. Then try **getMediaDevices()** followed by **stop()**; that one leaked in
+v1.
+:::
+
+{/*
+  `not-content` opts the panel out of Starlight's prose styles. Without it, its rule giving every
+  adjacent sibling `margin-top: 1rem` applies to buttons too, so each one in a row sits lower than
+  the one before it.
+*/}
+<div data-wide class="not-content">
+  <Playground client:only="react" />
+</div>
+
+## What you're looking at
+
+**Preview** — the `MediaStream` assigned to a `<video>` element's `srcObject`.
+
+**State** — everything the hook returns, live. Watch `getStreamRequest` move through `PENDING` while
+the permission prompt is open, and the `selected*` values report the resolution you actually got
+rather than the one requested.
+
+**Stream / Mute** — `start()`, `stop()`, `getMediaDevices()`, and the four mute functions. Muting
+toggles `track.enabled`, so the camera light stays on; only `stop()` turns it off.
+
+**Event listeners** — attach and detach your own handlers. Unplug a webcam to see `ended` fire, or
+run `$0.srcObject.getVideoTracks()[0].stop()` on the video element from devtools.
+
+**Devices** — populated by `getMediaDevices()`. Labels stay blank until permission is granted,
+which is why that call opens a stream first.
+
+**Constraints** — apply a resolution and facing mode, with or without resetting the live stream.
+
+## The source
+
+This page is the library's development playground, moved into the docs. It imports
+`use-media-stream` through a Vite alias pointing at the package source, so it runs the real hook
+rather than a copy — and edits to `src/` hot-reload here while working locally.
+
+[`docs/src/components/Playground.tsx`](https://github.com/kothariji/use-media-stream/blob/master/docs/src/components/Playground.tsx)

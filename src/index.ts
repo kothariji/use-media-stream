@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { REQUEST_STATES } from './constants';
-import merge from 'deepmerge';
 
 /**
  * Represents the configuration for using a media stream
@@ -33,6 +32,32 @@ const defaultMediaDeviceConstraints: MediaStreamConstraints = {
   },
 };
 
+type PlainObject = Record<string, unknown>;
+
+const isPlainObject = (value: unknown): value is PlainObject =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const mergePlain = (base: PlainObject, override: PlainObject): PlainObject => {
+  const merged: PlainObject = { ...base };
+  for (const [key, value] of Object.entries(override)) {
+    const existing = merged[key];
+    merged[key] = isPlainObject(existing) && isPlainObject(value) ? mergePlain(existing, value) : value;
+  }
+  return merged;
+};
+
+/**
+ * Recursively merges constraints, so `{ video: { width: 640 } }` keeps the default `facingMode`.
+ *
+ * ponytail: replaces the `deepmerge` dependency for the sake of one call. Behaves the same on
+ * plain objects; arrays are replaced rather than concatenated, since concatenating something
+ * like `deviceId: { exact: [...] }` across a merge produces a constraint nobody asked for.
+ */
+export const mergeConstraints = (
+  base: MediaStreamConstraints,
+  override: MediaStreamConstraints,
+): MediaStreamConstraints => mergePlain(base as PlainObject, override as PlainObject) as MediaStreamConstraints;
+
 type TrackKind = 'audio' | 'video';
 
 const tracksOf = (mediaStream: MediaStream | null | undefined, kind: TrackKind): MediaStreamTrack[] =>
@@ -45,7 +70,7 @@ const useMediaStream = (props?: useMediaStreamInterface) => {
   // check if the browser supports `getUserMedia`
   const isSupported = !!navigator?.mediaDevices?.getUserMedia;
   const [mediaDeviceConstraints, setMediaDeviceConstraints] = useState(() =>
-    merge(defaultMediaDeviceConstraints, props?.mediaDeviceConstraints ?? {}),
+    mergeConstraints(defaultMediaDeviceConstraints, props?.mediaDeviceConstraints ?? {}),
   );
   const [getStreamRequest, setGetStreamRequest] = useState(REQUEST_STATES.IDLE);
   const [getMediaDevicesRequest, setGetMediaDevicesRequest] = useState(REQUEST_STATES.IDLE);
@@ -248,7 +273,7 @@ const useMediaStream = (props?: useMediaStreamInterface) => {
     constraints: MediaStreamConstraints;
     resetStream: boolean;
   }) => {
-    const updatedUserMediaConstraints = merge(mediaDeviceConstraints, constraints);
+    const updatedUserMediaConstraints = mergeConstraints(mediaDeviceConstraints, constraints);
     setMediaDeviceConstraints(updatedUserMediaConstraints);
 
     if (!resetStream) return;

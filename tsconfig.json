@@ -1,16 +1,14 @@
 {
   "compilerOptions": {
     "strict": true,
-    "declaration": true,
     "target": "es2016",
     "module": "ESNext",
     "moduleResolution": "Node",
-    "rootDir": "./src",
-    "outDir": "lib/esm",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "noEmit": true
   },
-  "include": ["src/**/*.ts", "test"],
+  "include": ["src", "test"],
   "exclude": ["node_modules"]
 }

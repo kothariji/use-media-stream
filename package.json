@@ -30,6 +30,7 @@
     "build:esm": "tsc -p tsconfig.build.json",
     "build:cjs": "tsc -p tsconfig.cjs.json && node scripts/mark-cjs.mjs",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage --coverage.include=src/**",
     "typecheck": "tsc --noEmit",
     "prepare": "npm run build"
   },
@@ -66,6 +67,7 @@
     "@testing-library/react": "^16.3.2",
     "@types/node": "^26.2.0",
     "@types/react": "^19.2.18",
+    "@vitest/coverage-v8": "^4.1.10",
     "happy-dom": "^20.11.2",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",

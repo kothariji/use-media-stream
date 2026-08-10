@@ -158,6 +158,12 @@ describe('leak regressions', () => {
     expect(audioTrack.stop).toHaveBeenCalledTimes(1);
   });
 
+  it('unmounts cleanly when no stream was ever acquired', () => {
+    const { unmount } = mount();
+    expect(() => unmount()).not.toThrow();
+    expect(getUserMedia).not.toHaveBeenCalled();
+  });
+
   it('releases on unmount even when only getMediaDevices ran', async () => {
     const { result, unmount } = mount();
     await act(async () => {
@@ -183,6 +189,52 @@ describe('failure paths', () => {
     expect(result.current.error).toBeInstanceOf(Error);
     expect(result.current.error?.message).toMatch(/not supported/i);
     expect(result.current.getStreamRequest).toBe('REJECTED');
+  });
+
+  it('coerces a non-Error rejection into an Error', async () => {
+    // getUserMedia rejects with a DOMException in practice, but nothing guarantees it
+    getUserMedia.mockRejectedValueOnce('camera on fire');
+    const { result } = mount();
+
+    await act(async () => {
+      await result.current.start();
+    });
+
+    expect(result.current.error).toBeInstanceOf(Error);
+    expect(result.current.error?.message).toBe('camera on fire');
+  });
+
+  it('rejects getMediaDevices when the stream it needs cannot be acquired', async () => {
+    setMediaDevices(undefined);
+    const { result } = mount();
+
+    let devices: MediaDeviceInfo[] = [];
+    await act(async () => {
+      devices = await result.current.getMediaDevices();
+    });
+
+    expect(devices).toEqual([]);
+    expect(result.current.getMediaDevicesRequest).toBe('REJECTED');
+    expect(result.current.error?.message).toMatch(/not supported/i);
+  });
+
+  it('captures a rejected enumerateDevices', async () => {
+    setMediaDevices({
+      getUserMedia,
+      enumerateDevices: vi.fn(async () => {
+        throw new Error('enumeration failed');
+      }),
+    });
+    const { result } = mount();
+
+    let devices: MediaDeviceInfo[] = [];
+    await act(async () => {
+      devices = await result.current.getMediaDevices();
+    });
+
+    expect(devices).toEqual([]);
+    expect(result.current.getMediaDevicesRequest).toBe('REJECTED');
+    expect(result.current.error?.message).toBe('enumeration failed');
   });
 
   it('captures a rejected getUserMedia', async () => {
@@ -294,6 +346,20 @@ describe('mute', () => {
     expect(result.current.isVideoMuted).toBe(false);
   });
 
+  it('tracks mute and unmute on audio as well as video', async () => {
+    const { result } = mount();
+    await act(async () => {
+      await result.current.start();
+    });
+
+    act(() => audioTrack.emit('mute'));
+    expect(result.current.isAudioMuted).toBe(true);
+    expect(result.current.isVideoMuted).toBe(false); // independent of video
+
+    act(() => audioTrack.emit('unmute'));
+    expect(result.current.isAudioMuted).toBe(false);
+  });
+
   it('marks the stream as no longer streaming when a track ends on its own', async () => {
     const { result } = mount();
     await act(async () => {
@@ -373,6 +439,13 @@ describe('consumer event listeners', () => {
     act(() => result.current.removeVideoEndedEventListener(onEnded));
     act(() => videoTrack.emit('ended'));
     expect(onEnded).toHaveBeenCalledTimes(1);
+  });
+
+  it('is a no-op when there is no stream to attach to', () => {
+    const { result } = mount();
+    const noop: EventListener = () => {};
+    expect(() => act(() => result.current.addVideoEndedEventListener(noop))).not.toThrow();
+    expect(() => act(() => result.current.removeAudioMuteEventListener(noop))).not.toThrow();
   });
 
   it('exposes unmute listeners, matching the mute ones', async () => {

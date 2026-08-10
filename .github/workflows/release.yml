@@ -42,6 +42,17 @@ jobs:
       - run: npm test
 
       # --provenance publishes a signed attestation tying the tarball to this commit and workflow.
-      - run: npm publish --provenance --access public
+      #
+      # The dist-tag is derived rather than defaulted: `npm publish` tags as `latest` whatever the
+      # version says, so a v2.0.0-rc.0 tag would hand a release candidate to everyone running
+      # `npm install use-media-stream`. Prereleases go to `next`, and are installed deliberately.
+      - name: publish
+        run: |
+          case "$GITHUB_REF_NAME" in
+            *-*) DIST_TAG=next ;;
+            *)   DIST_TAG=latest ;;
+          esac
+          echo "publishing $GITHUB_REF_NAME to the '$DIST_TAG' tag"
+          npm publish --provenance --access public --tag "$DIST_TAG"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

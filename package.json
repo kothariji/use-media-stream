@@ -26,11 +26,13 @@
     "README.md"
   ],
   "scripts": {
-    "build": "npm run build:esm && npm run build:cjs",
+    "build": "npm run clean && npm run build:esm && npm run build:cjs",
+    "clean": "node scripts/clean.mjs",
     "build:esm": "tsc -p tsconfig.build.json",
     "build:cjs": "tsc -p tsconfig.cjs.json && node scripts/mark-cjs.mjs",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage --coverage.include=src/**",
+    "verify:package": "npm run build && node scripts/verify-package.mjs",
     "typecheck": "tsc --noEmit",
     "prepare": "npm run build"
   },

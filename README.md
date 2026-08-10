@@ -168,8 +168,19 @@ import { REQUEST_STATES, defaultMediaDeviceConstraints } from 'use-media-stream'
 npm install
 npm run typecheck
 npm test
+npm run test:coverage
 npm run build
 ```
+
+### Verifying the published output
+
+`npm run verify:package` packs the library and installs it into a scratch project the way a
+consumer would, then checks that `require()` resolves the CommonJS build, `import` resolves the
+ESM one, the types resolve in every module mode (`attw`), and `package.json` is sane (`publint`).
+
+This is worth running before any release. `npm link` and `file:` installs are *not* equivalent —
+they skip packing and the `files` field, and both of the packaging bugs this library shipped
+survive them. CI runs this same script.
 
 A playground is included for testing against a real camera. It aliases the package straight at
 `src/`, so edits hot-reload with no build step:

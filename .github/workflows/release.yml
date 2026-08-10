@@ -1,0 +1,45 @@
+name: Release
+
+# Publishing happens here rather than from a laptop, so what reaches npm is always something
+# the full suite passed on.
+#
+#   npm version major && git push --follow-tags
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  verify:
+    uses: ./.github/workflows/verify-package.yml
+
+  publish:
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # required for npm provenance
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          registry-url: https://registry.npmjs.org
+      - run: npm ci
+
+      - name: tag must match package.json version
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          PKG="$(node -p "require('./package.json').version")"
+          if [ "$TAG" != "$PKG" ]; then
+            echo "::error::tag v$TAG does not match package.json version $PKG"
+            exit 1
+          fi
+
+      - run: npm run typecheck
+      - run: npm test
+
+      # --provenance publishes a signed attestation tying the tarball to this commit and workflow.
+      - run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

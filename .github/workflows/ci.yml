@@ -24,28 +24,5 @@ jobs:
       - run: npm test
       - run: npm run build
 
-  # Guards the packaging: both entry points have been broken before, and neither failure
-  # showed up in a typecheck or a bundler-based test.
   package:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v5
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: npm run build
-      - run: npm pack
-      - name: require() the packed tarball
-        run: |
-          mkdir -p /tmp/cjs && cd /tmp/cjs && npm init -y
-          npm i "$GITHUB_WORKSPACE"/use-media-stream-*.tgz react
-          node -e "const m=require('use-media-stream'); if (typeof m.default !== 'function') throw new Error('CJS entry broken')"
-      - name: import the packed tarball
-        run: |
-          mkdir -p /tmp/esm && cd /tmp/esm && npm init -y
-          npm i "$GITHUB_WORKSPACE"/use-media-stream-*.tgz react
-          node --input-type=module -e "import m from 'use-media-stream'; if (typeof m !== 'function') throw new Error('ESM entry broken')"
-      - name: check published types resolve in every module mode
-        run: npx --yes @arethetypeswrong/cli@latest use-media-stream-*.tgz
+    uses: ./.github/workflows/verify-package.yml

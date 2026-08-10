@@ -7,6 +7,7 @@ on:
 
 jobs:
   check:
+    name: Node ${{ matrix.node }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -25,4 +26,5 @@ jobs:
       - run: npm run build
 
   package:
+    name: Package
     uses: ./.github/workflows/verify-package.yml

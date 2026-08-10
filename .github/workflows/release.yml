@@ -10,9 +10,11 @@ on:
 
 jobs:
   verify:
+    name: Package
     uses: ./.github/workflows/verify-package.yml
 
   publish:
+    name: Publish to npm
     needs: verify
     runs-on: ubuntu-latest
     permissions:

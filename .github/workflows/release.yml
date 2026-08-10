@@ -19,12 +19,14 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write # required for npm provenance
+      id-token: write # OIDC for trusted publishing, and for the provenance attestation
     steps:
       - uses: actions/checkout@v7
+      # Node 24 rather than 22: trusted publishing needs npm >= 11.5.1, and Node 22 still
+      # ships npm 10.x. Only affects how the package is published, not what it supports.
       - uses: actions/setup-node@v5
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
           registry-url: https://registry.npmjs.org
       - run: npm ci
@@ -41,6 +43,11 @@ jobs:
       - run: npm run typecheck
       - run: npm test
 
+      # Authenticates via OIDC (npm trusted publishing) rather than a stored token. npm verifies
+      # a short-lived credential proving this exact repo and workflow produced the tarball, so
+      # there is no long-lived secret to leak or rotate. Configured on npmjs.com under the
+      # package's Trusted publishing settings, pinned to this filename.
+      #
       # --provenance publishes a signed attestation tying the tarball to this commit and workflow.
       #
       # The dist-tag is derived rather than defaulted: `npm publish` tags as `latest` whatever the
@@ -48,11 +55,10 @@ jobs:
       # `npm install use-media-stream`. Prereleases go to `next`, and are installed deliberately.
       - name: publish
         run: |
+          echo "npm $(npm -v) on node $(node -v)"
           case "$GITHUB_REF_NAME" in
             *-*) DIST_TAG=next ;;
             *)   DIST_TAG=latest ;;
           esac
           echo "publishing $GITHUB_REF_NAME to the '$DIST_TAG' tag"
           npm publish --provenance --access public --tag "$DIST_TAG"
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

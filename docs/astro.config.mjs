@@ -71,13 +71,13 @@ export default defineConfig({
         'use-media-stream': new URL('../src/index.ts', import.meta.url).pathname,
       },
       /**
-       * The aliased source lives outside docs/, so it resolves `react` from the repo root while
-       * the island resolves it from docs/node_modules — two copies of React in one page. That
-       * surfaces as `_jsxDEV is not a function`, because the component is compiled against one
-       * copy's JSX runtime and rendered by the other's reconciler.
+       * A safety net, not the fix. The repo is an npm workspace, so react is hoisted to the root
+       * and both this app and the aliased source resolve the same copy.
        *
-       * Same root cause as the CI failure where the hook's types collapsed to `any`: this package
-       * is consumed from a directory that does not own its dependencies.
+       * It stays because running `npm install` inside docs/ rather than at the root recreates a
+       * local copy, and two Reacts in one page surface as `_jsxDEV is not a function` — the
+       * component compiled against one copy's JSX runtime, rendered by the other's reconciler.
+       * That is an unpleasant error to have to diagnose twice.
        */
       dedupe: ['react', 'react-dom'],
     },

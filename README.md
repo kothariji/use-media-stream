@@ -87,7 +87,7 @@ Full guides and API reference at **[kothariji.github.io/use-media-stream](https:
 ## Development
 
 ```sh
-npm install
+npm install          # one install at the root; docs/ is an npm workspace
 npm run typecheck
 npm test
 npm run test:coverage
@@ -98,9 +98,14 @@ The docs site doubles as the development playground — it imports the hook from
 hot-reload against a real camera:
 
 ```sh
-npm install            # root first: the docs typecheck resolves react from here
-cd docs && npm install && npm run dev
+npm run docs         # dev server, http://localhost:4321/use-media-stream/
+npm run docs:stop    # it runs detached, so it needs stopping explicitly
+npm run docs:build
 ```
+
+> Install from the **root**, not from inside `docs/`. The demo imports the hook from `src/`, which
+> resolves its dependencies from the root — a separate install in `docs/` gives you two copies of
+> React in one page.
 
 ### Verifying the published output
 

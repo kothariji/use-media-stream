@@ -9,6 +9,16 @@ const repo = 'https://github.com/kothariji/use-media-stream';
 export default defineConfig({
   site: 'https://kothariji.github.io',
   base: '/use-media-stream',
+  /**
+   * Internal links are relative, which is what keeps them independent of `base`. That only holds
+   * at URLs ending in a slash: from `/use-media-stream` rather than `/use-media-stream/`, a link
+   * to `./installation/` resolves to `/installation/` and 404s.
+   *
+   * GitHub Pages already 301s every path to add the slash, so production was never affected — but
+   * the dev server serves both happily, so the breakage only showed up locally. This makes dev
+   * agree with production instead of being more permissive than it.
+   */
+  trailingSlash: 'always',
   integrations: [
     react(),
     starlight({

@@ -33,6 +33,7 @@
     "clean": "node scripts/clean.mjs",
     "build:esm": "tsc -p tsconfig.build.json",
     "build:cjs": "tsc -p tsconfig.cjs.json && node scripts/mark-cjs.mjs",
+    "check": "npm run typecheck && npm test",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage --coverage.include=src/**",
     "verify:package": "npm run build && node scripts/verify-package.mjs",

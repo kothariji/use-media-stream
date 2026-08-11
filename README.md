@@ -88,8 +88,7 @@ Full guides and API reference at **[kothariji.github.io/use-media-stream](https:
 
 ```sh
 npm install          # one install at the root; docs/ is an npm workspace
-npm run typecheck
-npm test
+npm run check        # typecheck + tests, what CI gates on
 npm run test:coverage
 npm run build
 ```

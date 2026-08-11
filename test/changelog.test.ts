@@ -1,3 +1,5 @@
+// Referenced here rather than in tsconfig, so `src` stays unable to reach Node APIs by accident.
+/// <reference types="node" />
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
@@ -40,7 +42,7 @@ describe('CHANGELOG.md', () => {
   // have an entry of its own. Deleting it leaves its content orphaned under its successor.
   it('has an entry for every version compared against', () => {
     const present = new Set(headings.map((h) => h.version));
-    const oldest = headings.at(-1)?.version;
+    const oldest = headings[headings.length - 1]?.version;
 
     for (const { version, previous } of headings) {
       if (version === oldest) continue;

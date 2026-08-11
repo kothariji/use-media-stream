@@ -10,6 +10,8 @@ stream from a current one nor see one already in flight.
 
 Both are covered by regression tests verified to fail when the fix is removed.
 
+# [2.0.0](https://github.com/kothariji/use-media-stream/compare/v1.0.3...v2.0.0) (2026-08-10)
+
 A correctness release. The camera and mic were left running in two situations, neither entry
 point could be loaded from Node, and the hook could not be server-rendered at all. The public
 API is unchanged apart from additions, but the lifecycle fixes change behaviour by definition —

@@ -40,6 +40,14 @@ const useMediaStream = (props?: UseMediaStreamProps) => {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
+  // The constraints the open stream was acquired with — its cache key, in effect. Compared by
+  // reference, which is exact: `mediaDeviceConstraints` only ever changes through
+  // `updateMediaDeviceConstraints`, and `mergeConstraints` always returns a fresh object.
+  const acquiredWith = useRef<MediaStreamConstraints | null>(null);
+
+  // The acquisition currently in flight, if any, so concurrent callers can share it.
+  const inFlight = useRef<{ constraints: MediaStreamConstraints; promise: Promise<MediaStream | null> } | null>(null);
+
   // Memoised on identity, not just cost: a fresh array each render makes any consumer with
   // `useEffect(..., [audioInputDevices])` re-run forever.
   const { audioInputDevices, audioOutputDevices, videoInputDevices } = useMemo(
@@ -117,8 +125,8 @@ const useMediaStream = (props?: UseMediaStreamProps) => {
   useEffect(() => releaseStream, [releaseStream]);
 
   /** Acquires a stream. Resolves to `null` rather than throwing; the reason lands in `error`. */
-  const initiateStream = useCallback(
-    async (mediaDeviceConstraintsFromArgs = mediaDeviceConstraints): Promise<MediaStream | null> => {
+  const acquireStream = useCallback(
+    async (constraints: MediaStreamConstraints): Promise<MediaStream | null> => {
       // resetting the error state
       setError(null);
 
@@ -132,11 +140,14 @@ const useMediaStream = (props?: UseMediaStreamProps) => {
       setGetStreamRequest(REQUEST_STATES.PENDING);
 
       try {
-        const userMediaStream: MediaStream = await navigator.mediaDevices.getUserMedia(mediaDeviceConstraintsFromArgs);
+        const userMediaStream: MediaStream = await navigator.mediaDevices.getUserMedia(constraints);
 
         // track the stream ending or going silent on its own
         bindTrackEvents(userMediaStream, 'addEventListener');
         streamRef.current = userMediaStream;
+        // Remembering what this stream was acquired with is what lets `start()` tell a current
+        // stream from a stale one, instead of reusing whatever happens to be open.
+        acquiredWith.current = constraints;
         setStream(userMediaStream);
         setGetStreamRequest(REQUEST_STATES.FULFILLED);
         return userMediaStream;
@@ -146,12 +157,54 @@ const useMediaStream = (props?: UseMediaStreamProps) => {
         return null;
       }
     },
-    [mediaDeviceConstraints, isSupported, bindTrackEvents],
+    [isSupported, bindTrackEvents],
+  );
+
+  /**
+   * Single-flight gate over `acquireStream`.
+   *
+   * `start()` and `getMediaDevices()` can both be in flight at once, and without this each opens
+   * its own stream — the second overwrites `streamRef`, and the first is left running with nothing
+   * holding a reference to stop it.
+   *
+   * Not async, so the pending promise is registered before any caller can await.
+   *
+   * ponytail: keyed on the constraints object even though no current path can produce two
+   * concurrent acquisitions with different constraints — `updateMediaDeviceConstraints` bails when
+   * no stream is open, which closes the only candidate. It stays because an unkeyed cache would be
+   * correct only by accident of that guard, and would silently hand back a stream acquired for a
+   * different device the moment this area is reworked. Deliberately not unit tested: there is no
+   * honest way to reach it through the public API today.
+   */
+  const initiateStream = useCallback(
+    (constraints = mediaDeviceConstraints): Promise<MediaStream | null> => {
+      const pending = inFlight.current;
+      if (pending && pending.constraints === constraints) return pending.promise;
+
+      const promise = acquireStream(constraints).finally(() => {
+        if (inFlight.current?.promise === promise) inFlight.current = null;
+      });
+
+      inFlight.current = { constraints, promise };
+      return promise;
+    },
+    [mediaDeviceConstraints, acquireStream],
   );
 
   /** Starts the media stream if not already streaming. */
   const start = useCallback(async (): Promise<MediaStream | null> => {
     if (isStreaming) return streamRef.current;
+
+    /**
+     * An open stream is reused so that `getMediaDevices()` followed by `start()` does not acquire
+     * the camera twice — but only if it was acquired with the constraints now in effect. Reusing
+     * it unconditionally meant constraints set with `resetStream: false` were silently dropped:
+     * the stream opened to read device labels became the stream you kept.
+     */
+    if (streamRef.current && acquiredWith.current !== mediaDeviceConstraints) {
+      releaseStream();
+      setStream(null);
+    }
 
     const mediaStream = streamRef.current ?? (await initiateStream());
 
@@ -164,7 +217,7 @@ const useMediaStream = (props?: UseMediaStreamProps) => {
     }
 
     return mediaStream;
-  }, [isStreaming, initiateStream]);
+  }, [isStreaming, initiateStream, mediaDeviceConstraints, releaseStream]);
 
   /**
    * Releases the media stream and resets stream-related state.

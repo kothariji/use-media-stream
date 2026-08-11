@@ -1,4 +1,14 @@
-# [2.0.0](https://github.com/kothariji/use-media-stream/compare/v1.0.3...v2.0.0) (2026-08-10)
+# [2.0.1](https://github.com/kothariji/use-media-stream/compare/v2.0.0...v2.0.1) (2026-08-11)
+
+Two bugs with one cause: nothing owned stream acquisition, so `start()` could neither tell a stale
+stream from a current one nor see one already in flight.
+
+### Bug Fixes
+
+- **`start()` no longer drops constraints recorded since the open stream was acquired.** It reused any open stream, so the one `getMediaDevices()` opens to read device labels became the one you kept — and constraints set with `resetStream: false` were silently ignored, contrary to the documented behaviour. It now reuses a stream only if it was acquired with the constraints currently in effect, and releases it rather than leaking it otherwise. Reuse still happens in the common `getMediaDevices()` then `start()` flow, so the camera is not acquired twice.
+- **Concurrent callers share one acquisition.** Two `start()` calls in the same tick — or a `start()` racing a `getMediaDevices()` — each opened a stream. The second overwrote the internal reference and the first was left running with nothing able to stop it, which `stop()` and unmount could not release.
+
+Both are covered by regression tests verified to fail when the fix is removed.
 
 A correctness release. The camera and mic were left running in two situations, neither entry
 point could be loaded from Node, and the hook could not be server-rendered at all. The public

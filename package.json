@@ -25,6 +25,9 @@
     "LICENSE",
     "README.md"
   ],
+  "workspaces": [
+    "docs"
+  ],
   "scripts": {
     "build": "npm run clean && npm run build:esm && npm run build:cjs",
     "clean": "node scripts/clean.mjs",
@@ -33,6 +36,9 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage --coverage.include=src/**",
     "verify:package": "npm run build && node scripts/verify-package.mjs",
+    "docs": "npm run dev --workspace docs",
+    "docs:stop": "npm run dev:stop --workspace docs",
+    "docs:build": "npm run build --workspace docs",
     "typecheck": "tsc --noEmit",
     "prepare": "npm run build"
   },

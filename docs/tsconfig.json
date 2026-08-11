@@ -4,8 +4,7 @@
   "exclude": ["dist"],
   "compilerOptions": {
     "jsx": "react-jsx",
-    // Mirrors the Vite alias in astro.config.mjs so TypeScript resolves the demo's import
-    // to the package source rather than looking for an installed copy.
+    // Mirrors the Vite alias in astro.config.mjs.
     "paths": {
       "use-media-stream": ["../src/index.ts"]
     }

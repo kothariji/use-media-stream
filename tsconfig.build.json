@@ -1,7 +1,6 @@
 {
-  // The ESM half of the build, and the shared base for tsconfig.cjs.json.
-  // Inherits `module: nodenext` from tsconfig.json, which emits ESM because the root
-  // package.json is `"type": "module"`.
+  // The ESM half of the build, and the base for tsconfig.cjs.json. Inherits `module: nodenext`,
+  // which emits ESM because the root package.json is `"type": "module"`.
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "noEmit": false,

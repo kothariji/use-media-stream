@@ -49,8 +49,11 @@ const DEVICES = [
   { deviceId: 'v2', kind: 'videoinput', label: 'Cam 2', groupId: 'g' },
 ] as MediaDeviceInfo[];
 
+/** The first acquisition's tracks, which is the only stream most tests open. */
 let audioTrack: FakeTrack;
 let videoTrack: FakeTrack;
+/** Every track handed out, so a stream that was acquired and then dropped is observable. */
+let allTracks: FakeTrack[];
 let getUserMedia: ReturnType<typeof vi.fn>;
 
 const setMediaDevices = (value: unknown) =>
@@ -59,7 +62,18 @@ const setMediaDevices = (value: unknown) =>
 beforeEach(() => {
   audioTrack = makeTrack('audio');
   videoTrack = makeTrack('video');
-  getUserMedia = vi.fn(async () => makeStream([audioTrack, videoTrack]));
+  allTracks = [audioTrack, videoTrack];
+
+  // Each call returns fresh tracks, as the real getUserMedia does. Without that, a leaked stream
+  // shares track objects with the live one and is impossible to tell apart.
+  let call = 0;
+  getUserMedia = vi.fn(async () => {
+    if (call++ === 0) return makeStream([audioTrack, videoTrack]);
+    const next = [makeTrack('audio'), makeTrack('video')] as const;
+    allTracks.push(...next);
+    return makeStream([...next]);
+  });
+
   setMediaDevices({ getUserMedia, enumerateDevices: vi.fn(async () => DEVICES) });
 });
 
@@ -172,6 +186,84 @@ describe('leak regressions', () => {
     unmount();
     expect(videoTrack.stop).toHaveBeenCalledTimes(1);
   });
+});
+
+describe('acquisition is owned in one place', () => {
+  // `start()` reused any open stream, so the one getMediaDevices() opens to read device labels
+  // became the one you kept — silently dropping constraints recorded with resetStream: false.
+  it('honours constraints recorded since the open stream was acquired', async () => {
+    const { result } = mount();
+    await act(async () => {
+      await result.current.getMediaDevices();
+    });
+
+    await act(async () => {
+      await result.current.updateMediaDeviceConstraints({ constraints: { video: { width: 640 } } });
+    });
+    await act(async () => {
+      await result.current.start();
+    });
+
+    expect(getUserMedia).toHaveBeenCalledTimes(2);
+    expect(getUserMedia.mock.calls[1][0]).toMatchObject({ video: { width: 640, facingMode: 'user' } });
+    expect(result.current.isStreaming).toBe(true);
+  });
+
+  it('releases the stale stream rather than leaking it', async () => {
+    const { result } = mount();
+    await act(async () => {
+      await result.current.getMediaDevices();
+    });
+    const [firstAudio, firstVideo] = [audioTrack, videoTrack];
+
+    await act(async () => {
+      await result.current.updateMediaDeviceConstraints({ constraints: { video: { width: 640 } } });
+    });
+    await act(async () => {
+      await result.current.start();
+    });
+
+    expect(firstVideo.stop).toHaveBeenCalledTimes(1);
+    expect(firstAudio.stop).toHaveBeenCalledTimes(1);
+  });
+
+  it('still reuses the open stream when nothing changed', async () => {
+    const { result } = mount();
+    await act(async () => {
+      await result.current.getMediaDevices();
+    });
+    await act(async () => {
+      await result.current.start();
+    });
+
+    expect(getUserMedia).toHaveBeenCalledTimes(1);
+    expect(videoTrack.stop).not.toHaveBeenCalled();
+  });
+
+  // Two callers in the same tick each opened a stream; the second overwrote the ref and the first
+  // was left running with nothing holding a reference to stop it.
+  it('shares one acquisition between concurrent callers', async () => {
+    const { result } = mount();
+    await act(async () => {
+      await Promise.all([result.current.start(), result.current.start()]);
+    });
+
+    expect(getUserMedia).toHaveBeenCalledTimes(1);
+    expect(result.current.isStreaming).toBe(true);
+  });
+
+  it('leaves no orphaned tracks when start and getMediaDevices race', async () => {
+    const { result } = mount();
+    await act(async () => {
+      await Promise.all([result.current.start(), result.current.getMediaDevices()]);
+    });
+
+    expect(getUserMedia).toHaveBeenCalledTimes(1);
+
+    act(() => result.current.stop());
+    expect(allTracks.filter((t) => t.stop.mock.calls.length === 0)).toEqual([]);
+  });
+
 });
 
 describe('failure paths', () => {

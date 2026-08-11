@@ -9,6 +9,9 @@ const repo = 'https://github.com/kothariji/use-media-stream';
 export default defineConfig({
   site: 'https://kothariji.github.io',
   base: '/use-media-stream',
+  // Internal links are relative, which keeps them independent of `base` — but only resolves
+  // correctly at URLs ending in a slash. GitHub Pages 301s to add it; this makes dev do the same.
+  trailingSlash: 'always',
   integrations: [
     react(),
     starlight({
@@ -53,13 +56,13 @@ export default defineConfig({
   ],
   vite: {
     resolve: {
-      /**
-       * The demo runs the real source rather than the published package, so edits to the hook
-       * hot-reload here — the same trick the standalone playground used before it moved in.
-       */
+      // The demo runs the package source, so edits to the hook hot-reload here.
       alias: {
         'use-media-stream': new URL('../src/index.ts', import.meta.url).pathname,
       },
+      // Belt and braces: the workspace already hoists react, but installing inside docs/ instead
+      // of at the root recreates a local copy, and two Reacts give `_jsxDEV is not a function`.
+      dedupe: ['react', 'react-dom'],
     },
   },
 });

@@ -3,9 +3,9 @@ name: Docs
 on:
   push:
     branches: [master]
-    paths: ['docs/**', 'src/**', '.github/workflows/docs.yml']
+    paths: ['docs/**', 'src/**', 'package.json', 'package-lock.json', '.github/workflows/docs.yml']
   pull_request:
-    paths: ['docs/**', 'src/**', '.github/workflows/docs.yml']
+    paths: ['docs/**', 'src/**', 'package.json', 'package-lock.json', '.github/workflows/docs.yml']
   workflow_dispatch:
 
 # `src/**` is a trigger because the demo page imports the hook source through a Vite alias, so a
@@ -21,15 +21,14 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      # The demo imports the hook from ../src, which imports react. TypeScript resolves that from
-      # the repo root, so without the root install the hook's types silently degrade to `any` and
-      # `astro check` fails on implicit-any callbacks. The astro action only installs in docs/.
-      - name: install root dependencies
-        run: npm ci --ignore-scripts
-      - uses: withastro/action@v6
+      # One install at the workspace root covers docs too, and is what keeps react to a single
+      # copy. withastro/action is not used here because it installs inside its `path`, which no
+      # longer has a lockfile of its own.
+      - run: npm ci
+      - run: npm run build --workspace docs
+      - uses: actions/upload-pages-artifact@v5
         with:
-          path: docs
-          node-version: 22
+          path: docs/dist
 
   deploy:
     name: Deploy
@@ -39,7 +38,6 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     permissions:
-      contents: read
       pages: write
       id-token: write
     environment:

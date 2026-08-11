@@ -1,10 +1,5 @@
-/**
- * Everything is scoped under `.pg` and built from Starlight's custom properties, so the demo
- * follows the Flexoki theme and its light/dark modes instead of carrying its own palette.
- *
- * Deliberately denser than the surrounding prose — it is a control panel, not an article, and
- * the whole thing should fit on one screen rather than scrolling past the video.
- */
+/* Scoped under `.pg` and built from Starlight's custom properties, so the demo follows the theme.
+   Denser than the surrounding prose: it is a control panel, not an article. */
 
 .pg {
   --pg-line: var(--sl-color-gray-5);
@@ -33,8 +28,7 @@
   margin-bottom: 0.75rem;
 }
 
-/* Video and its controls on the left, live state on the right, so you can watch a value change
-   while pressing the button that changes it. */
+/* Controls left, live state right, so a value can be watched while pressing what changes it. */
 .pg-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(230px, 17rem);
@@ -125,9 +119,8 @@
 }
 
 .pg button {
-  /* `margin: 0` is deliberate. Starlight gives adjacent siblings margin-top: 1rem and does not
-     exclude buttons, which left every button in a row sitting lower than the one before it. The
-     wrapper carries `not-content` too; this makes the panel immune either way. */
+  /* Starlight gives adjacent siblings margin-top and does not exclude buttons, which misaligns
+     every row. The wrapper carries `not-content` too; this is belt and braces. */
   margin: 0;
   background: var(--sl-color-gray-6);
   color: var(--sl-color-white);
@@ -302,8 +295,7 @@
   margin: 0;
 }
 
-/* `not-content` on the wrapper removes Starlight's inline-code styling along with everything
-   else, so the panel restores a minimal version for the hint text. */
+/* `not-content` strips Starlight's inline-code styling, so restore a minimal version. */
 .pg code {
   font-family: var(--pg-mono);
   font-size: 0.9em;

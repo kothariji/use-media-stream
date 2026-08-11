@@ -1,18 +1,12 @@
-/**
+/*
  * Opt a page out of the 45rem prose column by wrapping its content in `<div data-wide>`.
- *
- * The demo is a control panel, not an article: at prose width its two columns collapse into one
- * very tall stack, with the video at the top and everything else scrolled off below it.
- *
- * The attribute is server-rendered in the MDX rather than set by the React island, so the width
- * is correct on first paint and does not shift when the island hydrates.
+ * Set on the element rather than by the island, so the width is right on first paint.
  */
 body:has([data-wide]) {
   --sl-content-width: 78rem;
 }
 
-/* The prose around the panel would be uncomfortably wide at that measure, so only the wrapper
-   itself gets the extra room. */
+/* Only the wrapper gets the extra room; prose stays readable. */
 body:has([data-wide]) .sl-markdown-content > :not([data-wide]) {
   max-width: 45rem;
 }

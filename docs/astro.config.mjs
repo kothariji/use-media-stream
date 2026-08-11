@@ -9,15 +9,8 @@ const repo = 'https://github.com/kothariji/use-media-stream';
 export default defineConfig({
   site: 'https://kothariji.github.io',
   base: '/use-media-stream',
-  /**
-   * Internal links are relative, which is what keeps them independent of `base`. That only holds
-   * at URLs ending in a slash: from `/use-media-stream` rather than `/use-media-stream/`, a link
-   * to `./installation/` resolves to `/installation/` and 404s.
-   *
-   * GitHub Pages already 301s every path to add the slash, so production was never affected — but
-   * the dev server serves both happily, so the breakage only showed up locally. This makes dev
-   * agree with production instead of being more permissive than it.
-   */
+  // Internal links are relative, which keeps them independent of `base` — but only resolves
+  // correctly at URLs ending in a slash. GitHub Pages 301s to add it; this makes dev do the same.
   trailingSlash: 'always',
   integrations: [
     react(),
@@ -63,22 +56,12 @@ export default defineConfig({
   ],
   vite: {
     resolve: {
-      /**
-       * The demo runs the real source rather than the published package, so edits to the hook
-       * hot-reload here — the same trick the standalone playground used before it moved in.
-       */
+      // The demo runs the package source, so edits to the hook hot-reload here.
       alias: {
         'use-media-stream': new URL('../src/index.ts', import.meta.url).pathname,
       },
-      /**
-       * A safety net, not the fix. The repo is an npm workspace, so react is hoisted to the root
-       * and both this app and the aliased source resolve the same copy.
-       *
-       * It stays because running `npm install` inside docs/ rather than at the root recreates a
-       * local copy, and two Reacts in one page surface as `_jsxDEV is not a function` — the
-       * component compiled against one copy's JSX runtime, rendered by the other's reconciler.
-       * That is an unpleasant error to have to diagnose twice.
-       */
+      // Belt and braces: the workspace already hoists react, but installing inside docs/ instead
+      // of at the root recreates a local copy, and two Reacts give `_jsxDEV is not a function`.
       dedupe: ['react', 'react-dom'],
     },
   },

@@ -3,12 +3,10 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
-/**
- * Packs the library and installs it into a scratch project, the way a consumer would.
- *
- * `npm link` and `file:` installs are not equivalent — they skip the `files` field and the
- * packing step, so both of the bugs this package shipped (a CJS build Node loaded as ESM, and
- * extensionless ESM specifiers) survive them. Only the tarball reproduces what npm publishes.
+/*
+ * Packs the library and installs it into a scratch project, the way a consumer would. `npm link`
+ * and `file:` installs skip packing and the `files` field, so the packaging bugs this once shipped
+ * survive them — only the tarball reproduces what npm publishes.
  */
 
 const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';

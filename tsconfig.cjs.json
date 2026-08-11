@@ -1,8 +1,7 @@
 {
-  // The CommonJS half of the build. `moduleResolution: nodenext` refuses to pair with
-  // `module: commonjs`, so this pass resolves as a bundler would. That only affects how
-  // imports are *found* while emitting — `npm run typecheck` still gates the whole project
-  // on nodenext, which is the strict one that enforces explicit .js extensions.
+  // The CommonJS half of the build. `moduleResolution: nodenext` cannot pair with
+  // `module: commonjs`, so this emit-only pass resolves as a bundler would; `npm run typecheck`
+  // still gates the project on nodenext, which is what enforces explicit .js extensions.
   "extends": "./tsconfig.build.json",
   "compilerOptions": {
     "module": "commonjs",

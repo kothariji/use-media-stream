@@ -2,13 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import useMediaStream from 'use-media-stream';
 import './playground.css';
 
-/**
- * The live demo. Renders with `client:only="react"` because the hook reads `navigator`, and
- * Starlight prerenders every page.
- *
- * Imports `use-media-stream` through the Vite alias in astro.config.mjs, which points at
- * ../../src — so this runs the real source and edits to the hook hot-reload here.
- */
+// Rendered with `client:only` because the hook reads `navigator`. Imports the hook through the
+// Vite alias in astro.config.mjs, so this runs the package source.
 
 type LogFn = (msg: string) => void;
 type Tab = 'devices' | 'constraints' | 'events';
@@ -41,7 +36,7 @@ function Panel({ log }: { log: LogFn }) {
     if (videoRef.current) videoRef.current.srcObject = m.stream;
   }, [m.stream]);
 
-  // kept in a ref so add/remove pass the same function identity
+  // in a ref so add/remove pass the same function identity
   const listeners = useRef({
     videoEnded: () => log('event: video track "ended"'),
     audioEnded: () => log('event: audio track "ended"'),
@@ -76,7 +71,7 @@ function Panel({ log }: { log: LogFn }) {
   const setConstraints = (constraints: MediaStreamConstraints, resetStream: boolean) =>
     run('updateMediaDeviceConstraints', () => m.updateMediaDeviceConstraints({ constraints, resetStream }));
 
-  /** add/remove pair for one track event, so twelve buttons fit in six rows */
+  // one row per event, so twelve buttons fit in six
   const eventRows: Array<[string, () => void, () => void]> = [
     ['video ended', () => m.addVideoEndedEventListener(listeners.videoEnded), () => m.removeVideoEndedEventListener(listeners.videoEnded)],
     ['audio ended', () => m.addAudioEndedEventListener(listeners.audioEnded), () => m.removeAudioEndedEventListener(listeners.audioEnded)],

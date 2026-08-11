@@ -9,46 +9,35 @@ import type {
   UseMediaStreamProps,
 } from './types.js';
 
-/**
- * React hook for managing and integrating media streams within your application.
- */
+/** React hook for managing and integrating media streams within your application. */
 const useMediaStream = (props?: UseMediaStreamProps) => {
-  /**
-   * `typeof` rather than `navigator?.` — optional chaining still throws on an identifier that
-   * was never declared, and Node had no global `navigator` before 21. Without this the hook
-   * cannot be server-rendered at all on Node 18 or 20.
-   */
+  // `typeof`, not `navigator?.` — optional chaining still throws on an undeclared identifier, and
+  // Node had no global `navigator` before 21. Server rendering depends on this.
   const isSupported = typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia;
   const [mediaDeviceConstraints, setMediaDeviceConstraints] = useState(() =>
     mergeConstraints(defaultMediaDeviceConstraints, props?.mediaDeviceConstraints ?? {}),
   );
-  // Annotated, otherwise `as const` on REQUEST_STATES narrows these to the literal 'IDLE'.
+  // Annotated, or `as const` on REQUEST_STATES narrows these to the literal 'IDLE'.
   const [getStreamRequest, setGetStreamRequest] = useState<RequestState>(REQUEST_STATES.IDLE);
   const [getMediaDevicesRequest, setGetMediaDevicesRequest] = useState<RequestState>(REQUEST_STATES.IDLE);
 
-  // `isStreaming` is a flag that holds true when the start() function is called.
   const [isStreaming, setIsStreaming] = useState(false);
-
-  //global state for capturing any error in while fetching the stream or devices
   const [error, setError] = useState<Error | null>(null);
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const [isAudioMuted, setIsAudioMuted] = useState(false);
   const [isVideoMuted, setIsVideoMuted] = useState(false);
 
-  // State drives re-renders of the derived values below; the ref mirror is what teardown
-  // reads, since it must see the live stream rather than the last committed render.
+  // State for rendering; the ref for teardown, which must see the live stream rather than the
+  // last committed render.
   const [stream, setStream] = useState<MediaStream | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
-  // The constraints the open stream was acquired with — its cache key, in effect. Compared by
-  // reference, which is exact: `mediaDeviceConstraints` only ever changes through
-  // `updateMediaDeviceConstraints`, and `mergeConstraints` always returns a fresh object.
+  // What the open stream was acquired with — its cache key. Reference comparison is exact:
+  // `mergeConstraints` returns a fresh object on every change.
   const acquiredWith = useRef<MediaStreamConstraints | null>(null);
-
-  // The acquisition currently in flight, if any, so concurrent callers can share it.
   const inFlight = useRef<{ constraints: MediaStreamConstraints; promise: Promise<MediaStream | null> } | null>(null);
 
-  // Memoised on identity, not just cost: a fresh array each render makes any consumer with
+  // Memoised for identity, not cost: a fresh array each render makes a consumer's
   // `useEffect(..., [audioInputDevices])` re-run forever.
   const { audioInputDevices, audioOutputDevices, videoInputDevices } = useMemo(
     () => ({
@@ -112,7 +101,7 @@ const useMediaStream = (props?: UseMediaStreamProps) => {
     ],
   );
 
-  /** Reads the ref, not state, so it is correct when called in the same tick a stream is acquired. */
+  /** Reads the ref, not state, so it is correct in the same tick a stream is acquired. */
   const releaseStream = useCallback(() => {
     if (!streamRef.current) return;
     bindTrackEvents(streamRef.current, 'removeEventListener');
@@ -120,17 +109,15 @@ const useMediaStream = (props?: UseMediaStreamProps) => {
     streamRef.current = null;
   }, [bindTrackEvents]);
 
-  // Without this the camera and mic stay live until the tab closes.
-  // `releaseStream` is stable (every handler it closes over has empty deps), so this only runs on unmount.
+  // Unmount teardown. `releaseStream` is stable, so this only runs on unmount.
   useEffect(() => releaseStream, [releaseStream]);
 
   /** Acquires a stream. Resolves to `null` rather than throwing; the reason lands in `error`. */
   const acquireStream = useCallback(
     async (constraints: MediaStreamConstraints): Promise<MediaStream | null> => {
-      // resetting the error state
       setError(null);
 
-      // Guarded here rather than per-caller: `start` and `getMediaDevices` both route through this.
+      // Guarded here, not per-caller: `start` and `getMediaDevices` both route through this.
       if (!isSupported) {
         setGetStreamRequest(REQUEST_STATES.REJECTED);
         setError(new Error('getUserMedia is not supported in this browser'));
@@ -142,11 +129,8 @@ const useMediaStream = (props?: UseMediaStreamProps) => {
       try {
         const userMediaStream: MediaStream = await navigator.mediaDevices.getUserMedia(constraints);
 
-        // track the stream ending or going silent on its own
         bindTrackEvents(userMediaStream, 'addEventListener');
         streamRef.current = userMediaStream;
-        // Remembering what this stream was acquired with is what lets `start()` tell a current
-        // stream from a stale one, instead of reusing whatever happens to be open.
         acquiredWith.current = constraints;
         setStream(userMediaStream);
         setGetStreamRequest(REQUEST_STATES.FULFILLED);
@@ -161,20 +145,11 @@ const useMediaStream = (props?: UseMediaStreamProps) => {
   );
 
   /**
-   * Single-flight gate over `acquireStream`.
+   * Single-flight gate. Without it, a `start()` and a `getMediaDevices()` in the same tick each
+   * open a stream and the first is left running with nothing able to stop it.
    *
-   * `start()` and `getMediaDevices()` can both be in flight at once, and without this each opens
-   * its own stream — the second overwrites `streamRef`, and the first is left running with nothing
-   * holding a reference to stop it.
-   *
-   * Not async, so the pending promise is registered before any caller can await.
-   *
-   * ponytail: keyed on the constraints object even though no current path can produce two
-   * concurrent acquisitions with different constraints — `updateMediaDeviceConstraints` bails when
-   * no stream is open, which closes the only candidate. It stays because an unkeyed cache would be
-   * correct only by accident of that guard, and would silently hand back a stream acquired for a
-   * different device the moment this area is reworked. Deliberately not unit tested: there is no
-   * honest way to reach it through the public API today.
+   * Not async, so the pending promise is registered before any caller can await. Keyed on the
+   * constraints so a request for one device can never be handed another's stream.
    */
   const initiateStream = useCallback(
     (constraints = mediaDeviceConstraints): Promise<MediaStream | null> => {
@@ -195,12 +170,9 @@ const useMediaStream = (props?: UseMediaStreamProps) => {
   const start = useCallback(async (): Promise<MediaStream | null> => {
     if (isStreaming) return streamRef.current;
 
-    /**
-     * An open stream is reused so that `getMediaDevices()` followed by `start()` does not acquire
-     * the camera twice — but only if it was acquired with the constraints now in effect. Reusing
-     * it unconditionally meant constraints set with `resetStream: false` were silently dropped:
-     * the stream opened to read device labels became the stream you kept.
-     */
+    // An open stream is reused, so getMediaDevices() then start() does not acquire twice — but only
+    // if it matches the current constraints, or a stream opened just to read device labels would
+    // silently become the one you keep.
     if (streamRef.current && acquiredWith.current !== mediaDeviceConstraints) {
       releaseStream();
       setStream(null);
@@ -208,13 +180,9 @@ const useMediaStream = (props?: UseMediaStreamProps) => {
 
     const mediaStream = streamRef.current ?? (await initiateStream());
 
-    if (mediaStream) {
-      /**
-       * Set `isStreaming` explicitly here rather than in `initiateStream`, which other callers
-       * like `getMediaDevices` also use — only an explicit start() means the consumer asked for it.
-       */
-      setIsStreaming(true);
-    }
+    // Set here rather than in acquireStream, which getMediaDevices also uses: only an explicit
+    // start() means the consumer asked to stream.
+    if (mediaStream) setIsStreaming(true);
 
     return mediaStream;
   }, [isStreaming, initiateStream, mediaDeviceConstraints, releaseStream]);
@@ -222,8 +190,8 @@ const useMediaStream = (props?: UseMediaStreamProps) => {
   /**
    * Releases the media stream and resets stream-related state.
    *
-   * Guards on the stream, not `isStreaming`: `getMediaDevices` acquires a stream without ever
-   * setting that flag, so keying off it left those tracks running with no way to release them.
+   * Guards on the stream, not `isStreaming`: `getMediaDevices` acquires one without setting that
+   * flag, so keying off it left those tracks unreleasable.
    */
   const stop = useCallback((): void => {
     if (!streamRef.current) return;
@@ -236,17 +204,16 @@ const useMediaStream = (props?: UseMediaStreamProps) => {
   }, [releaseStream]);
 
   /**
-   * Lists available media devices, acquiring a stream first because device labels stay blank
-   * until permission is granted — see https://stackoverflow.com/a/65366422/12383316
-   *
-   * The stream it opens is released by `stop()` like any other.
+   * Lists available media devices. Acquires a stream first because labels stay blank until
+   * permission is granted — https://stackoverflow.com/a/65366422/12383316 — and `stop()` releases
+   * that stream like any other.
    */
   const getMediaDevices = useCallback(async (): Promise<MediaDeviceInfo[]> => {
     setError(null);
     setGetMediaDevicesRequest(REQUEST_STATES.PENDING);
 
     try {
-      // `initiateStream` owns the isSupported check and populates `error` if it fails
+      // initiateStream owns the isSupported check and populates `error` if it fails
       if (!streamRef.current && !(await initiateStream())) {
         setGetMediaDevicesRequest(REQUEST_STATES.REJECTED);
         return [];
@@ -269,11 +236,10 @@ const useMediaStream = (props?: UseMediaStreamProps) => {
       const updatedUserMediaConstraints = mergeConstraints(mediaDeviceConstraints, constraints);
       setMediaDeviceConstraints(updatedUserMediaConstraints);
 
-      // Guards on the stream for the same reason `stop()` does. There is nothing to reset when no
-      // stream is open, and re-acquiring here would switch the camera on without being asked to.
+      // Nothing to reset with no stream open, and acquiring here would switch the camera on unasked.
       if (!resetStream || !streamRef.current) return;
 
-      // Constraints are passed explicitly below because the state update above has not flushed yet.
+      // Constraints passed explicitly: the state update above has not flushed yet.
       const wasStreaming = isStreaming;
       stop();
       const updatedStream = await initiateStream(updatedUserMediaConstraints);
@@ -284,8 +250,7 @@ const useMediaStream = (props?: UseMediaStreamProps) => {
 
   /** Toggles `track.enabled`, which keeps the device open but stops it producing data. */
   const setTracksEnabled = useCallback((kind: TrackKind, enabled: boolean): void => {
-    // Bail before touching the flag: with no stream there is nothing to mute, and reporting
-    // otherwise leaves the flag contradicting the tracks once one is acquired.
+    // Bail before touching the flag, or it contradicts the tracks once one is acquired.
     if (!streamRef.current) return;
 
     tracksOf(streamRef.current, kind).forEach((track) => (track.enabled = enabled));
@@ -298,11 +263,8 @@ const useMediaStream = (props?: UseMediaStreamProps) => {
   const unmuteVideo = useCallback((): void => setTracksEnabled('video', true), [setTracksEnabled]);
 
   /**
-   * Consumer-supplied track listeners. These apply to the tracks held right now, so they need
-   * re-adding after anything that replaces the stream.
-   *
-   * Built once: every one of them reads `streamRef`, which never changes identity, so there is
-   * nothing for them to close over stalely.
+   * Consumer-supplied track listeners, applying to the tracks held right now — so they need
+   * re-adding after anything that replaces the stream. Built once; they read only `streamRef`.
    */
   const trackEventListeners = useMemo(() => {
     const bind =
@@ -364,11 +326,7 @@ const useMediaStream = (props?: UseMediaStreamProps) => {
   };
 };
 
-/**
- * Everything the hook returns.
- *
- * ponytail: derived rather than hand-written, so it cannot drift from the implementation.
- */
+/** Everything the hook returns. Derived, so it cannot drift from the implementation. */
 export type UseMediaStreamReturn = ReturnType<typeof useMediaStream>;
 
 export { REQUEST_STATES, defaultMediaDeviceConstraints } from './constants.js';

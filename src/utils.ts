@@ -16,18 +16,15 @@ const mergePlain = (base: PlainObject, override: PlainObject): PlainObject => {
 
 /**
  * Recursively merges constraints, so `{ video: { width: 640 } }` keeps the default `facingMode`.
- *
- * ponytail: replaces the `deepmerge` dependency for the sake of one call. Behaves the same on
- * plain objects; arrays are replaced rather than concatenated, since concatenating something
- * like `deviceId: { exact: [...] }` across a merge produces a constraint nobody asked for.
+ * Arrays are replaced, not concatenated: merging `deviceId: { exact: [...] }` twice should not
+ * produce a constraint matching both devices.
  */
 export const mergeConstraints = (
   base: MediaStreamConstraints,
   override: MediaStreamConstraints,
 ): MediaStreamConstraints => mergePlain(base as PlainObject, override as PlainObject) as MediaStreamConstraints;
 
-// getUserMedia and enumerateDevices reject with DOMException, so this all but always passes
-// the value straight through — it just spares every consumer an `instanceof` narrowing.
+// Spares every consumer an `instanceof` narrowing; media APIs reject with DOMException anyway.
 export const toError = (value: unknown): Error => (value instanceof Error ? value : new Error(String(value)));
 
 export const tracksOf = (mediaStream: MediaStream | null | undefined, kind: TrackKind): MediaStreamTrack[] =>
